@@ -1,0 +1,343 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Pub/Sub Console API",
+    "version": "1.0"
+  },
+  "tags": [
+    {
+      "name": "Console"
+    }
+  ],
+  "host": "pub-sub.kr-central-2.kakaocloud-stg.com",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/domains/{domain}/projects/{project}/dashboard": {
+      "get": {
+        "operationId": "Console_GetDashboardInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetDashboardResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Console"
+        ]
+      }
+    },
+    "/v1/domains/{domain}/projects/{project}/quota": {
+      "get": {
+        "operationId": "Console_GetQuota",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetQuotaResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Console"
+        ]
+      }
+    },
+    "/v1/domains/{domain}/projects/{project}/service": {
+      "get": {
+        "operationId": "Console_GetServiceStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetServiceStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Console"
+        ]
+      },
+      "post": {
+        "operationId": "Console_StartService",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Console"
+        ]
+      }
+    },
+    "/v1/domains/{domain}/projects/{project}/validateFilter": {
+      "post": {
+        "operationId": "Console_ValidateFilter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ValidateFilterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConsoleValidateFilterBody"
+            }
+          }
+        ],
+        "tags": [
+          "Console"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ConsoleValidateFilterBody": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1DashboardInfo": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/v1DashboardType"
+        },
+        "value": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1DashboardType": {
+      "type": "string",
+      "enum": [
+        "TOPIC",
+        "SUBSCRIPTION"
+      ],
+      "default": "TOPIC"
+    },
+    "v1GetDashboardResponse": {
+      "type": "object",
+      "properties": {
+        "dashboardInfo": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1DashboardInfo"
+          }
+        }
+      }
+    },
+    "v1GetQuotaResponse": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "$ref": "#/definitions/v1Quota"
+        },
+        "subscription": {
+          "$ref": "#/definitions/v1Quota"
+        }
+      }
+    },
+    "v1GetServiceStatusResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/v1ServiceStatus"
+        }
+      }
+    },
+    "v1Quota": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "remaining": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1ServiceStatus": {
+      "type": "string",
+      "enum": [
+        "INACTIVE",
+        "ACTIVE"
+      ],
+      "default": "INACTIVE"
+    },
+    "v1ValidateFilterResponse": {
+      "type": "object"
+    }
+  },
+  "securityDefinitions": {
+    "Access-Token": {
+      "type": "apiKey",
+      "name": "Access-Token",
+      "in": "header"
+    },
+    "Console-Request": {
+      "type": "apiKey",
+      "description": "required: cHVic3Vi",
+      "name": "Console-Request",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "Access-Token": [],
+      "Console-Request": []
+    }
+  ]
+}

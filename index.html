@@ -1,0 +1,3462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swagger API 자동화 테스트</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --get: #16a34a;
+      --get-bg: #dcfce7;
+      --post: #2563eb;
+      --post-bg: #dbeafe;
+      --put: #d97706;
+      --put-bg: #fef3c7;
+      --delete: #dc2626;
+      --delete-bg: #fee2e2;
+      --patch: #7c3aed;
+      --patch-bg: #ede9fe;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -1px rgba(0,0,0,.04);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────────── */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 52px;
+      flex-shrink: 0;
+      box-shadow: var(--shadow);
+    }
+    .app-header h1 { font-size: 16px; font-weight: 700; color: var(--primary); }
+    .app-header .subtitle { font-size: 12px; color: var(--text-muted); }
+    .header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+    /* ─── Auth Panel ─────────────────────────────────────────────── */
+    .auth-panel {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      flex-shrink: 0;
+    }
+    .auth-panel-inner {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .auth-field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap input {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 32px 6px 10px;
+      font-size: 13px;
+      background: var(--surface2);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .input-wrap input:focus { border-color: var(--primary); background: #fff; }
+    .input-wrap input.wide { width: 220px; }
+    .input-wrap input.medium { width: 160px; }
+    .eye-btn {
+      position: absolute;
+      right: 6px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+    .eye-btn:hover { color: var(--text); }
+    .auth-actions { display: flex; gap: 8px; align-items: flex-end; }
+    .saved-notice {
+      font-size: 11px;
+      color: var(--success);
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+    .saved-notice.show { display: flex; }
+
+    /* ─── Buttons ────────────────────────────────────────────────── */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 14px;
+      transition: opacity .15s, background .15s;
+      white-space: nowrap;
+    }
+    button:hover { opacity: .88; }
+    button:active { opacity: .75; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger  { background: var(--danger);  color: #fff; }
+    .btn-ghost   { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    /* ─── Main layout ────────────────────────────────────────────── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      gap: 0;
+    }
+
+    /* ─── Left Panel ─────────────────────────────────────────────── */
+    .left-panel {
+      width: 360px;
+      min-width: 220px;
+      max-width: 75vw;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .resize-handle {
+      width: 5px;
+      background: var(--border);
+      cursor: col-resize;
+      flex-shrink: 0;
+      position: relative;
+      transition: background .15s;
+      z-index: 10;
+    }
+    .resize-handle:hover,
+    .resize-handle.dragging {
+      background: var(--primary);
+    }
+    .resize-handle::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1px;
+      height: 32px;
+      background: currentColor;
+      opacity: .3;
+      border-radius: 1px;
+    }
+    .left-top {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .file-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .file-select-wrap label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #fileSelect, #scenarioSelect {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+      transition: border-color .15s;
+    }
+    #fileSelect:focus, #scenarioSelect:focus { border-color: var(--primary); background-color: #fff; }
+    .api-count-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .api-count-badge.error { background: var(--danger); }
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .filter-row input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 10px;
+      font-size: 12px;
+      outline: none;
+      background: var(--surface2);
+    }
+    .filter-row input:focus { border-color: var(--primary); }
+    .api-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .api-list::-webkit-scrollbar { width: 4px; }
+    .api-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ─── API Item ────────────────────────────────────────────────── */
+    .api-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 6px;
+      overflow: hidden;
+      transition: box-shadow .15s;
+      cursor: pointer;
+    }
+    .api-item:hover { box-shadow: var(--shadow-md); }
+    .api-item.selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+    .api-item-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      gap: 8px;
+    }
+    .method-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      flex-shrink: 0;
+    }
+    .method-GET    { background: var(--get-bg);    color: var(--get); }
+    .method-POST   { background: var(--post-bg);   color: var(--post); }
+    .method-PUT    { background: var(--put-bg);     color: var(--put); }
+    .method-DELETE { background: var(--delete-bg); color: var(--delete); }
+    .method-PATCH  { background: var(--patch-bg);  color: var(--patch); }
+    .api-path {
+      flex: 1;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .api-summary {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 0 10px 6px 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .api-item-footer {
+      display: flex;
+      align-items: center;
+      padding: 4px 10px 6px;
+      gap: 6px;
+    }
+    .status-icon { font-size: 13px; flex-shrink: 0; }
+    .run-btn-sm {
+      margin-left: auto;
+      padding: 3px 10px;
+      font-size: 11px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 5px;
+    }
+    .run-btn-sm:hover { background: var(--primary-dark); }
+
+    /* ─── Right Panel ────────────────────────────────────────────── */
+    .right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--surface2);
+    }
+    .right-panel-inner {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .right-panel-inner::-webkit-scrollbar { width: 6px; }
+    .right-panel-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      gap: 12px;
+    }
+    .empty-state .icon { font-size: 48px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ─── Detail Card ────────────────────────────────────────────── */
+    .detail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .detail-card-header {
+      padding: 12px 16px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .detail-card-body { padding: 14px 16px; }
+
+    .endpoint-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .endpoint-url {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 14px;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .endpoint-desc { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
+
+    /* ─── Table ───────────────────────────────────────────────────── */
+    table.info-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .info-table th {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 5px 8px;
+      width: 140px;
+      vertical-align: top;
+    }
+    .info-table td {
+      padding: 5px 8px;
+      color: var(--text);
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .info-table tr + tr td,
+    .info-table tr + tr th { border-top: 1px solid var(--border); }
+
+    /* ─── Code / JSON ────────────────────────────────────────────── */
+    pre.code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    pre.code-block::-webkit-scrollbar { height: 4px; width: 4px; }
+    pre.code-block::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+    /* ─── Status Badge ────────────────────────────────────────────── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-2xx { background: #dcfce7; color: #15803d; }
+    .status-3xx { background: #fef3c7; color: #b45309; }
+    .status-4xx { background: #fee2e2; color: #b91c1c; }
+    .status-5xx { background: #fee2e2; color: #b91c1c; }
+    .status-err { background: #f1f5f9; color: #64748b; }
+
+    /* ─── Bottom Summary Bar ──────────────────────────────────────── */
+    .summary-bar {
+      height: 36px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .summary-bar .stat { display: flex; align-items: center; gap: 5px; }
+    .summary-bar .stat strong { font-weight: 700; color: var(--text); }
+    .stat-success strong { color: var(--success); }
+    .stat-fail    strong { color: var(--danger); }
+
+    /* ─── Dialog ─────────────────────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .overlay.show { display: flex; }
+    .dialog {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,.2);
+    }
+    .dialog h3 { font-size: 16px; margin-bottom: 10px; }
+    .dialog p  { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+    .dialog-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ─── Tag ────────────────────────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .run-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .progress-bar-wrap {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 2px 0;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #60a5fa);
+      background-size: 200% 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease-in-out;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    /* ─── Token Expired Toast ────────────────────────────────────── */
+    .token-toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      background: #fff;
+      border: 1.5px solid var(--danger);
+      border-left: 5px solid var(--danger);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+      padding: 14px 18px 14px 16px;
+      max-width: 360px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transform: translateX(420px);
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .token-toast.show { transform: translateX(0); }
+    .token-toast-icon { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    .token-toast-body { flex: 1; }
+    .token-toast-title { font-weight: 700; font-size: 13px; color: var(--danger); margin-bottom: 4px; }
+    .token-toast-msg   { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .token-toast-close {
+      background: none; border: none; font-size: 16px;
+      color: var(--text-muted); cursor: pointer; padding: 0; flex-shrink: 0;
+    }
+    .token-toast-close:hover { color: var(--text); }
+
+    .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Subscription Picker Modal ─────────────────────────────── */
+    .sub-picker-modal {
+      background: var(--surface);
+      border-radius: 12px;
+      width: 520px;
+      max-width: 94vw;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,.2);
+      overflow: hidden;
+    }
+    .sub-picker-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      font-weight: 700;
+      font-size: 15px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .sub-picker-close {
+      background: none;
+      border: none;
+      font-size: 16px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .sub-picker-close:hover { background: var(--bg); color: var(--text); }
+    .sub-picker-search {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sub-picker-search input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px 12px;
+      font-size: 13px;
+      outline: none;
+      background: var(--surface2);
+    }
+    .sub-picker-search input:focus { border-color: var(--primary); }
+    .sub-picker-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .sub-picker-body::-webkit-scrollbar { width: 4px; }
+    .sub-picker-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .sub-picker-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all .12s;
+      margin-bottom: 4px;
+    }
+    .sub-picker-item:hover { background: #eff6ff; border-color: #93c5fd; }
+    .sub-picker-item .sub-name {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .sub-picker-item .sub-select-btn {
+      font-size: 11px;
+      padding: 3px 10px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 5px;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+    .sub-picker-empty {
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .sub-picker-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .sub-picker-footer span { flex: 1; }
+    .sub-type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      letter-spacing: .03em;
+      flex-shrink: 0;
+    }
+    .sub-type-PULL           { background: #dbeafe; color: #1d4ed8; }
+    .sub-type-PUSH           { background: #dcfce7; color: #15803d; }
+    .sub-type-OBJECT_STORAGE { background: #fef3c7; color: #b45309; }
+    .sub-type-UNKNOWN        { background: #f1f5f9; color: #64748b; }
+    .pick-sub-btn {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: #eff6ff;
+      color: var(--primary);
+      border: 1px solid #93c5fd;
+      border-radius: 5px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .pick-sub-btn:hover { background: var(--primary); color: #fff; }
+
+    /* ─── Param Editor ───────────────────────────────────────────── */
+    .param-editor { display: flex; flex-direction: column; gap: 6px; }
+    .param-row { display: flex; gap: 6px; align-items: center; }
+    .param-row label {
+      min-width: 160px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .param-row label span.req { color: var(--danger); font-size: 10px; }
+    .param-row input, .param-row textarea {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 8px;
+      font-size: 12px;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      background: var(--surface2);
+      outline: none;
+      color: var(--text);
+      resize: vertical;
+    }
+    .param-row input:focus, .param-row textarea:focus { border-color: var(--primary); }
+    .param-in-badge {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ─── Result state colors ──────────────────────────────────── */
+    .api-item.result-pass { border-left: 3px solid var(--success); }
+    .api-item.result-fail { border-left: 3px solid var(--danger); }
+    .api-item.result-warn { border-left: 3px solid var(--warning); }
+
+    /* ─── Harness Timeline ─────────────────────────────────────── */
+    .harness-timeline { position: relative; padding-left: 24px; }
+    .harness-timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    .harness-step {
+      position: relative;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .harness-step::before {
+      content: '';
+      position: absolute;
+      left: -20px; top: 14px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      border: 2px solid var(--surface);
+    }
+    .harness-step.pass::before { background: var(--success); }
+    .harness-step.fail::before { background: var(--danger); }
+
+    /* ─── Stats & Toast ────────────────────────────────────────── */
+    .stat-warn { color: var(--warning); }
+    @keyframes slideIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+
+
+  </style>
+</head>
+<body>
+
+<!-- ─── Config (사용자 수정 영역) ──────────────────────────────────── -->
+<script>
+const ENVIRONMENTS = [
+  { name: 'dev',   label: '🔧 Dev',   baseUrl: '', iamUrl: 'https://iam.kakaocloud-stg.com/identity/v3/auth/tokens' },
+  { name: 'stage', label: '🧪 Stage', baseUrl: '', iamUrl: 'https://iam.kakaocloud-stg.com/identity/v3/auth/tokens' },
+  { name: 'prod',  label: '🚀 Prod',  baseUrl: '', iamUrl: 'https://iam.kakaocloud.com/identity/v3/auth/tokens' },
+];
+let activeEnv = ENVIRONMENTS[0];
+
+const SWAGGER_FILES = [
+  { name: "console_v1", file: "./swagger/console_v1.json" },
+  { name: "console_v2", file: "./swagger/console_v2.json" },
+  { name: "pubsub_v1",  file: "./swagger/pubsub_v1.json" },
+  { name: "pubsub_v2",  file: "./swagger/pubsub_v2.json" },
+];
+</script>
+
+<!-- ─── App HTML ──────────────────────────────────────────────────── -->
+
+<!-- Header -->
+<header class="app-header">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+    <line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="3 2"/>
+  </svg>
+  <h1>Swagger API Tester</h1>
+  <span class="subtitle">자동화 테스트 도구</span>
+  <div class="header-right">
+    <span class="saved-notice" id="savedNotice">🔒 인증 정보가 저장되어 있습니다</span>
+  </div>
+</header>
+
+<!-- Auth Panel -->
+<section class="auth-panel">
+
+  <!-- Row 1: Fields + Buttons -->
+  <div class="auth-panel-inner">
+
+    <div class="auth-field">
+      <label>Environment</label>
+      <select id="envSelect" onchange="onEnvChange(this.value)"
+        style="border:1px solid var(--border);border-radius:var(--radius);
+               padding:6px 10px;font-size:13px;background:var(--surface2);
+               color:var(--text);outline:none;height:32px">
+      </select>
+    </div>
+
+    <div class="auth-field">
+      <label>Domain-ID</label>
+      <div class="input-wrap">
+        <input type="password" id="domainId" class="medium" placeholder="domain-id" autocomplete="off" />
+        <button class="eye-btn" onclick="toggleEye('domainId', this)" title="보기/숨기기">👁</button>
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <label>Project-ID</label>
+      <div class="input-wrap">
+        <input type="password" id="projectId" class="medium" placeholder="project-id" autocomplete="off" />
+        <button class="eye-btn" onclick="toggleEye('projectId', this)" title="보기/숨기기">👁</button>
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <label>Credential-ID</label>
+      <div class="input-wrap">
+        <input type="password" id="credId" class="medium" placeholder="credential-id" autocomplete="off" />
+        <button class="eye-btn" onclick="toggleEye('credId', this)" title="보기/숨기기">👁</button>
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <label>Credential-Secret</label>
+      <div class="input-wrap">
+        <input type="password" id="credSecret" class="medium" placeholder="credential-secret" autocomplete="off" />
+        <button class="eye-btn" onclick="toggleEye('credSecret', this)" title="보기/숨기기">👁</button>
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <label>X-Auth-Token</label>
+      <div class="input-wrap">
+        <input type="password" id="authToken" class="wide" placeholder="bearer token" autocomplete="off" />
+        <button class="eye-btn" onclick="toggleEye('authToken', this)" title="보기/숨기기">👁</button>
+      </div>
+    </div>
+
+    <!-- 버튼 그룹 (X-Auth-Token 바로 옆, flex-end 정렬로 input과 나란히) -->
+    <div style="display:flex;gap:6px;align-items:center;align-self:flex-end;flex:1">
+      <button class="btn-primary btn-sm" id="tokenFetchBtn" onclick="fetchAuthToken()"
+        title="⏰ 12시간마다 자동 갱신&#10;Credential-ID / Credential-Secret 으로 IAM 토큰 자동 발급 후&#10;11시간 30분마다 자동으로 재발급됩니다">🔑 발급</button>
+      <button class="btn-primary btn-sm" onclick="saveAuth()">💾 저장</button>
+      <button class="btn-ghost btn-sm" onclick="showClearDialog()">🗑 전체 초기화</button>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn-ghost btn-sm" onclick="openVarsModal()" title="body JSON 안에서 {{변수명}} 으로 사용할 값을 미리 정의합니다">📝 변수 설정</button>
+        <button class="btn-ghost btn-sm" onclick="clearAllBodies()" title="모든 API의 Request Body를 Swagger 스펙 기본값으로 되돌립니다">🔄 Body 원복</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="tokenRefreshStatus" style="font-size:11px;color:var(--text-muted);white-space:nowrap;margin-top:4px"></div>
+
+</section>
+<input type="hidden" id="baseUrl" />
+
+<!-- Run Params Modal -->
+<div class="overlay" id="runParamsOverlay" onclick="if(event.target===this)closeRunParamsModal()">
+  <div class="dialog" style="width:560px;max-width:94vw;padding:0;overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+      <span style="font-size:15px;font-weight:700">▶ 실행 전 파라미터 설정</span>
+      <button onclick="closeRunParamsModal()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted)">✕</button>
+    </div>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:16px" id="runParamsSections"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn-ghost btn-sm" onclick="closeRunParamsModal()">취소</button>
+      <button class="btn-success btn-sm" id="runParamsConfirmBtn">▶ 실행</button>
+    </div>
+  </div>
+</div>
+
+<!-- Variables Modal -->
+<div class="overlay" id="varsModalOverlay" onclick="if(event.target===this)closeVarsModal()" style="z-index:1000">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;
+              width:480px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.2);display:flex;flex-direction:column">
+    <!-- 헤더 -->
+    <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);gap:8px">
+      <span style="font-size:14px;font-weight:700;color:var(--text)">🔧 Template Variables</span>
+      <code style="font-size:11px;color:var(--text-muted);background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">{{varName}}</code>
+      <span style="font-size:11px;color:var(--text-muted)">을 body에서 사용</span>
+      <button onclick="closeVarsModal()"
+        style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1;padding:2px 6px">✕</button>
+    </div>
+    <!-- 변수 목록 -->
+    <div style="padding:12px 16px">
+      <div style="display:flex;gap:6px;margin-bottom:6px;font-size:11px;color:var(--text-muted);padding:0 2px">
+        <span style="width:160px;flex-shrink:0">변수명</span>
+        <span style="flex:1">값</span>
+      </div>
+      <div id="varsList"
+        style="display:flex;flex-direction:column;gap:5px;max-height:240px;overflow-y:auto;padding-right:4px"></div>
+      <button class="btn-ghost btn-sm" onclick="addVarRow()" style="margin-top:10px;width:100%">＋ 변수 추가</button>
+    </div>
+    <!-- 푸터 -->
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;
+                padding:10px 16px;border-top:1px solid var(--border)">
+      <span id="varsSavedNotice" style="font-size:11px;color:var(--success);opacity:0;transition:opacity 0.4s">저장됨</span>
+      <button class="btn-ghost btn-sm" onclick="closeVarsModal()">닫기</button>
+      <button class="btn-primary btn-sm" onclick="saveVars()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left Panel -->
+  <aside class="left-panel">
+    <div class="left-top">
+      <div class="file-select-wrap">
+        <label>API 파일</label>
+        <select id="fileSelect" onchange="activeFile = parseInt(this.value); activeScenario = null; renderScenarioSelect(); renderApiList(); updateFileCountBadge()"></select>
+        <span class="api-count-badge" id="apiCountBadge">0</span>
+      </div>
+      <div class="file-select-wrap" style="margin-top:2px">
+        <label>시나리오</label>
+        <select id="scenarioSelect" onchange="onScenarioChange(this.value)">
+          <option value="">전체 API 실행</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <input type="text" id="filterInput" placeholder="🔍 경로/요약 검색..." oninput="renderApiList()" />
+        <button class="btn-success btn-sm" id="runAllBtn" onclick="onRunBtnClick()">▶ 전체 실행</button>
+      </div>
+      <div class="progress-bar-wrap" id="progressWrap" style="display:none">
+        <div class="progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="api-list" id="apiList"></div>
+  </aside>
+
+  <!-- Resize Handle -->
+  <div class="resize-handle" id="resizeHandle"></div>
+
+  <!-- Right Panel -->
+  <main class="right-panel">
+    <div class="right-panel-inner" id="detailPanel">
+      <div class="empty-state">
+        <div class="icon">🔎</div>
+        <p>좌측에서 API를 선택하거나 실행하세요</p>
+        <p style="font-size:12px">swagger 파일을 ./swagger/ 에 넣어주세요</p>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!-- Summary Bar -->
+<div class="summary-bar">
+  <div class="stat">전체 <strong id="statTotal">0</strong></div>
+  <div class="stat stat-success">성공 <strong id="statSuccess">0</strong></div>
+  <div class="stat stat-fail">실패 <strong id="statFail">0</strong></div>
+  <div class="stat stat-warn">Assert 실패 <strong id="statAssertFail">0</strong></div>
+  <div class="stat">마지막 실행 <strong id="statTime">—</strong></div>
+</div>
+
+
+<!-- Topic Name Input Dialog -->
+<div class="overlay" id="topicNameOverlay">
+  <div class="dialog">
+    <h3>📤 토픽 이름 입력</h3>
+    <p style="margin-bottom:12px">새로 생성할 토픽 이름을 입력해주세요.</p>
+    <input
+      type="text"
+      id="topicNameInput"
+      placeholder="예: my-topic"
+      style="width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:14px;outline:none;margin-bottom:6px"
+      onkeydown="if(event.key==='Enter') confirmTopicName()"
+    />
+    <div id="topicNameError" style="font-size:11px;color:var(--danger);min-height:16px;margin-bottom:4px"></div>
+    <div class="dialog-actions">
+      <button class="btn-ghost" onclick="cancelTopicName()">취소</button>
+      <button class="btn-primary" onclick="confirmTopicName()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- Run All Confirm Dialog -->
+<div class="overlay" id="runAllOverlay">
+  <div class="dialog">
+    <h3>▶ 전체 실행</h3>
+    <p id="runAllDialogMsg"></p>
+    <div class="dialog-actions">
+      <button class="btn-ghost" onclick="hideRunAllDialog()">취소</button>
+      <button class="btn-primary" id="runAllConfirmBtn">실행</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clear Dialog -->
+<div class="overlay" id="clearOverlay">
+  <div class="dialog">
+    <h3>⚠️ 전체 초기화</h3>
+    <p>저장된 인증 정보를 모두 삭제합니다.<br>이 작업은 되돌릴 수 없습니다.</p>
+    <div class="dialog-actions">
+      <button class="btn-ghost" onclick="hideClearDialog()">취소</button>
+      <button class="btn-danger" onclick="clearAll()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- Subscription Picker Modal -->
+<div class="overlay" id="subPickerOverlay" onclick="if(event.target===this)hideSubPicker()">
+  <div class="sub-picker-modal">
+    <div class="sub-picker-header">
+      <span>📋 Subscription 선택</span>
+      <button class="sub-picker-close" onclick="hideSubPicker()">✕</button>
+    </div>
+    <div class="sub-picker-search">
+      <input type="text" id="subPickerSearch" placeholder="🔍 이름으로 검색..." oninput="filterSubList()" />
+    </div>
+    <div class="sub-picker-body" id="subPickerBody">
+      <div class="sub-picker-empty">로딩 중...</div>
+    </div>
+    <div class="sub-picker-footer">
+      <span id="subPickerCount" style="font-size:12px;color:var(--text-muted)"></span>
+      <button class="btn-ghost btn-sm" onclick="hideSubPicker()">닫기</button>
+      <button class="btn-primary btn-sm" onclick="refreshSubList()">🔄 새로고침</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── JavaScript ─────────────────────────────────────────────────── -->
+<script>
+/* ── API 설명 매핑 ──────────────────────────────────────────────────── */
+// { title: '목록 간략 제목', desc: '상세 패널 설명' }
+// 매칭 기준: 경로 접미사 + method (경로 파라미터 무시)
+const API_META = [
+  // ── Console ────────────────────────────────────────────────────────
+  { method:'GET',    ends:'dashboard',            title:'대시보드 조회',        desc:'토픽·서브스크립션 수, 메시지 처리량 등 프로젝트 전체 현황을 확인합니다.' },
+  { method:'GET',    ends:'quota',                title:'할당량 조회',           desc:'토픽·서브스크립션·메시지의 사용량 및 잔여 할당량을 확인합니다.' },
+  { method:'GET',    ends:'service',              title:'서비스 상태 조회',      desc:'Pub/Sub 서비스의 활성화 여부를 확인합니다.' },
+  { method:'POST',   ends:'service',              title:'서비스 활성화/비활성화', desc:'Pub/Sub 서비스를 켜거나 끕니다.' },
+  { method:'POST',   ends:'validatefilter',       title:'필터 기능 유효성 테스트', desc:'필터 기능 유효성 테스트' },
+  // ── Topic ──────────────────────────────────────────────────────────
+  { method:'GET',    ends:'topics',               title:'토픽 목록 조회',        desc:'현재 프로젝트에 생성된 토픽 전체 목록을 가져옵니다.' },
+  { method:'PUT',    ends:'topics',               title:'토픽 생성',             desc:'새로운 토픽을 생성합니다. 메시지 보존 기간(messageRetentionDuration) 등을 설정할 수 있습니다.' },
+  { method:'DELETE', ends:'topics',               title:'토픽 배치 삭제',         desc:'여러 토픽을 한 번에 삭제합니다. (v2 전용) 삭제 전 연결된 서브스크립션을 확인하세요.' },
+  { method:'GET',    contains:'topics/', ends:'', title:'토픽 상세 조회',        desc:'특정 토픽의 상세 정보(상태, 보존 기간, 연결 서브스크립션 수 등)를 조회합니다.' },
+  { method:'DELETE', contains:'topics/', ends:'', title:'토픽 삭제',             desc:'특정 토픽을 삭제합니다. 토픽 삭제 시 연결된 서브스크립션도 함께 확인이 필요합니다.' },
+  { method:'PATCH',  contains:'topics/', ends:'', title:'토픽 수정',             desc:'특정 토픽의 설정(설명, 보존 기간 등)을 변경합니다. updateMask로 수정할 필드를 지정합니다.' },
+  { method:'POST',   ends:'publish',              title:'메시지 발행',            desc:'토픽에 메시지를 발행합니다. 연결된 서브스크립션자가 Pull 방식으로 수신하거나, PUSH/Object Storage 서브스크립션은 자동으로 전달됩니다.' },
+  { method:'GET',    ends:'topics/subscriptions', title:'토픽 연결 서브스크립션 조회',    desc:'해당 토픽을 서브스크립션하고 있는 서브스크립션 목록을 조회합니다.' },
+  { method:'PUT',    contains:'subscriptions/', ends:'', title:'서브스크립션 생성',        desc:'새로운 서브스크립션을 생성하고 토픽에 연결합니다. PULL / PUSH / Object Storage 유형 중 선택할 수 있습니다.' },
+  { method:'PUT',    contains:'topics/', ends:'',        title:'토픽 생성',        desc:'새로운 토픽을 생성합니다. 메시지 보존 기간(messageRetentionDuration) 등을 설정할 수 있습니다.' },
+  // ── Subscription ───────────────────────────────────────────────────
+  { method:'GET',    ends:'subscriptions',        title:'서브스크립션 목록 조회',        desc:'현재 프로젝트에 생성된 서브스크립션 전체 목록을 가져옵니다.' },
+  { method:'PUT',    ends:'subscriptions',        title:'서브스크립션 생성',             desc:'새로운 서브스크립션을 생성하고 토픽에 연결합니다. PULL / PUSH / Object Storage 유형 중 선택할 수 있습니다.' },
+  { method:'DELETE', ends:'subscriptions',        title:'서브스크립션 배치 삭제',         desc:'여러 서브스크립션을 한 번에 삭제합니다. (v2 전용)' },
+  { method:'GET',    contains:'subscriptions/', ends:'', title:'서브스크립션 상세 조회', desc:'특정 서브스크립션의 상세 정보(유형, 연결 토픽, Ack 설정, 미처리 메시지 수 등)를 조회합니다.' },
+  { method:'DELETE', contains:'subscriptions/', ends:'', title:'서브스크립션 삭제',      desc:'특정 서브스크립션을 삭제합니다.' },
+  { method:'PATCH',  contains:'subscriptions/', ends:'', title:'서브스크립션 수정',      desc:'특정 서브스크립션의 설정(Ack 대기시간, 필터 표현식 등)을 변경합니다. updateMask로 수정할 필드를 지정합니다.' },
+  { method:'POST',   ends:'pull',                 title:'메시지 수신 (Pull)',     desc:'서브스크립션에서 미처리 메시지를 꺼내옵니다. maxMessages로 최대 수신 수, waitTime으로 대기 시간을 설정할 수 있습니다.' },
+  { method:'POST',   ends:'acknowledge',          title:'메시지 Ack 처리',        desc:'Pull로 수신한 메시지를 정상 처리했음을 서버에 알립니다. Ack하지 않으면 ackDeadline 이후 재전송됩니다.' },
+  { method:'POST',   ends:'modifyackdeadline',    title:'Ack 대기시간 조정',      desc:'처리 중인 메시지의 Ack 타임아웃을 연장(EXTEND)하거나, 즉시 재전송(NACK) 처리합니다.' },
+  { method:'POST',   ends:'seek',                 title:'메시지 커서 이동',       desc:'특정 시점(time)으로 서브스크립션의 읽기 위치를 이동합니다. 이미 처리한 메시지를 특정 시점부터 재처리할 때 사용합니다.' },
+  { method:'POST',   ends:'export/start',         title:'메시지 내보내기 시작',   desc:'서브스크립션의 미처리 메시지를 Object Storage로 내보내기를 시작합니다. Object Storage 서브스크립션 유형에서 사용합니다.' },
+  { method:'POST',   ends:'export/stop',          title:'메시지 내보내기 중지',   desc:'진행 중인 Object Storage 메시지 내보내기를 중단합니다.' },
+];
+
+function getApiMeta(method, path) {
+  const p = path.toLowerCase();
+  for (const meta of API_META) {
+    if (meta.method !== method) continue;
+    const endsMatch    = !meta.ends     || p.endsWith(meta.ends);
+    const containsMatch = !meta.contains || p.includes(meta.contains);
+    // ends가 있고 contains도 있으면 둘 다 충족해야 함
+    if (meta.ends && meta.contains) {
+      if (endsMatch && containsMatch) return meta;
+    } else if (meta.ends) {
+      if (endsMatch) return meta;
+    } else if (meta.contains) {
+      if (containsMatch) return meta;
+    }
+  }
+  return null;
+}
+
+function getApiTitle(method, path)       { return getApiMeta(method, path)?.title || ''; }
+function getApiDescription(method, path) { return getApiMeta(method, path)?.desc  || ''; }
+
+/* ── Scenarios ─────────────────────────────────────────────────────── */
+// appliesTo: Swagger 파일명 배열 (SWAGGER_FILES[i].name)
+// apis: { method, pathIncludes, pathNotIncludes? } 순서대로 실행
+const SCENARIOS = [
+  {
+    id: 's1', emoji: '📊', name: '시나리오 1. 서비스 상태 확인',
+    appliesTo: ['console_v1', 'console_v2'],
+    setup: [],
+    apis: [
+      { method: 'GET', pathIncludes: 'dashboard', assert: [{ type: 'statusRange', min: 200, max: 299 }] },
+      { method: 'GET', pathIncludes: 'quota',     assert: [{ type: 'statusRange', min: 200, max: 299 }] },
+      { method: 'GET', pathIncludes: 'service',   assert: [{ type: 'statusRange', min: 200, max: 299 }] },
+    ],
+    teardown: []
+  },
+  {
+    id: 's2', emoji: '📤', name: '시나리오 2. 토픽 생성·조회',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'PUT', pathIncludes: 'topic',
+        extract: [{ from: 'body.name', ctxKey: 'topicName' }],
+        assert: [{ type: 'statusRange', min: 200, max: 299 }, { type: 'bodyExists', path: 'name' }]
+      },
+      {
+        method: 'GET', pathIncludes: 'topics', pathNotIncludes: '{topic',
+        assert: [{ type: 'status', expected: 200 }]
+      },
+      {
+        method: 'GET', pathIncludes: 'topics/', pathNotIncludes: 'subscriptions',
+        inject: [{ ctxKey: 'topicName', into: 'path', param: 'topic.name' }],
+        assert: [{ type: 'status', expected: 200 }, { type: 'bodyExists', path: 'name' }]
+      },
+      {
+        method: 'PATCH', pathIncludes: 'topic',
+        inject: [{ ctxKey: 'topicName', into: 'path', param: 'topic.name' }],
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      }
+    ],
+    teardown: [
+      {
+        method: 'DELETE', pathIncludes: 'topics',
+        inject: [{ ctxKey: 'topicName', into: 'path', param: 'topic.name' }]
+      }
+    ]
+  },
+  {
+    id: 's3', emoji: '📥', name: '시나리오 3. 서브스크립션 생성·조회',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'PUT', pathIncludes: 'subscription',
+        extract: [{ from: 'body.name', ctxKey: 'subName' }],
+        assert: [{ type: 'statusRange', min: 200, max: 299 }, { type: 'bodyExists', path: 'name' }]
+      },
+      {
+        method: 'GET', pathIncludes: 'subscriptions', pathNotIncludes: '{subscription',
+        assert: [{ type: 'status', expected: 200 }]
+      },
+      {
+        method: 'GET', pathIncludes: 'subscriptions/', pathNotIncludes: 'acknowledge|pull|seek|export|modify|topics',
+        inject: [{ ctxKey: 'subName', into: 'path', param: 'subscription.name' }],
+        assert: [{ type: 'status', expected: 200 }]
+      },
+      {
+        method: 'GET', pathIncludes: 'topics/', pathIncludes2: 'subscriptions',
+        assert: [{ type: 'status', expected: 200 }]
+      },
+      {
+        method: 'PATCH', pathIncludes: 'subscription',
+        inject: [{ ctxKey: 'subName', into: 'path', param: 'subscription.name' }],
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      }
+    ],
+    teardown: [
+      {
+        method: 'DELETE', pathIncludes: 'subscriptions',
+        inject: [{ ctxKey: 'subName', into: 'path', param: 'subscription.name' }]
+      }
+    ]
+  },
+  {
+    id: 's4', emoji: '💬', name: '시나리오 4. 메시지 E2E 플로우',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'POST', pathIncludes: 'publish',
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      },
+      {
+        method: 'POST', pathIncludes: 'pull',
+        extract: [{ from: 'body.receivedMessages[0].ackId', ctxKey: 'ackId' }],
+        assert: [{ type: 'status', expected: 200 }, { type: 'bodyExists', path: 'receivedMessages' }]
+      },
+      {
+        method: 'POST', pathIncludes: 'acknowledge',
+        inject: [{ ctxKey: 'ackId', into: 'body', param: 'ackIds[0]' }],
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      }
+    ],
+    teardown: []
+  },
+  {
+    id: 's5', emoji: '⏱️', name: '시나리오 5. Ack 예외 케이스',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'POST', pathIncludes: 'pull',
+        extract: [{ from: 'body.receivedMessages[0].ackId', ctxKey: 'ackId' }],
+        assert: [{ type: 'status', expected: 200 }]
+      },
+      {
+        method: 'POST', pathIncludes: 'modifyAckDeadline',
+        inject: [{ ctxKey: 'ackId', into: 'body', param: 'ackIds[0]' }],
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      },
+      {
+        method: 'POST', pathIncludes: 'acknowledge',
+        inject: [{ ctxKey: 'ackId', into: 'body', param: 'ackIds[0]' }],
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      }
+    ],
+    teardown: []
+  },
+  {
+    id: 's6', emoji: '⏪', name: '시나리오 6. Seek 재처리',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'POST', pathIncludes: 'publish',
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      },
+      {
+        method: 'POST', pathIncludes: 'pull',
+        assert: [{ type: 'status', expected: 200 }]
+      },
+      {
+        method: 'POST', pathIncludes: 'seek',
+        assert: [{ type: 'statusRange', min: 200, max: 299 }]
+      }
+    ],
+    teardown: []
+  },
+  {
+    id: 's8', emoji: '🗑', name: '시나리오 7. 리소스 정리',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      { method: 'DELETE', pathIncludes: 'subscriptions', assert: [{ type: 'statusRange', min: 200, max: 299 }] },
+      { method: 'DELETE', pathIncludes: 'topics',        assert: [{ type: 'statusRange', min: 200, max: 299 }] },
+    ],
+    teardown: []
+  },
+  /* ── QA 시나리오 ─────────────────────────────────────────────── */
+  {
+    id: 'sq1', emoji: '⚠️', name: '[QA] 잘못된 파라미터 검증',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'GET', pathIncludes: 'topics/', pathNotIncludes: 'subscriptions',
+        inject: [{ ctxKey: 'nonExistTopic', into: 'path', param: 'topic.name' }],
+        assert: [{ type: 'status', expected: 404 }]
+      }
+    ],
+    teardown: []
+  },
+  {
+    id: 'sq2', emoji: '🔐', name: '[QA] 응답 스키마 검증',
+    appliesTo: ['pubsub_v1', 'pubsub_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'GET', pathIncludes: 'topics', pathNotIncludes: '{topic',
+        assert: [
+          { type: 'status', expected: 200 },
+          { type: 'bodySchema', requiredKeys: ['topics'] },
+          { type: 'responseTime', maxMs: 3000 }
+        ]
+      },
+      {
+        method: 'GET', pathIncludes: 'subscriptions', pathNotIncludes: '{subscription',
+        assert: [
+          { type: 'status', expected: 200 },
+          { type: 'bodySchema', requiredKeys: ['subscriptions'] },
+          { type: 'responseTime', maxMs: 3000 }
+        ]
+      }
+    ],
+    teardown: []
+  },
+  {
+    id: 'sq3', emoji: '⏱️', name: '[QA] SLA 응답시간 검증',
+    appliesTo: ['console_v1', 'console_v2'],
+    setup: [],
+    apis: [
+      {
+        method: 'GET', pathIncludes: 'dashboard',
+        assert: [{ type: 'statusRange', min: 200, max: 299 }, { type: 'responseTime', maxMs: 2000 }]
+      },
+      {
+        method: 'GET', pathIncludes: 'quota',
+        assert: [{ type: 'statusRange', min: 200, max: 299 }, { type: 'responseTime', maxMs: 2000 }]
+      }
+    ],
+    teardown: []
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════════════
+   HARNESS ENGINE
+══════════════════════════════════════════════════════════════════════ */
+const HarnessContext = {
+  _store: {},
+  set(key, value) { this._store[key] = value; },
+  get(key)        { return this._store[key]; },
+  has(key)        { return key in this._store; },
+  clear()         { this._store = {}; },
+  dump()          { return { ...this._store }; }
+};
+
+function getNestedValue(obj, path) {
+  if (!obj || !path) return undefined;
+  return path.split('.').reduce((cur, key) => {
+    if (cur === undefined || cur === null) return undefined;
+    const arrMatch = key.match(/^(.+)\[(\d+)\]$/);
+    if (arrMatch) return cur[arrMatch[1]]?.[parseInt(arrMatch[2])];
+    return cur[key];
+  }, obj);
+}
+
+function runAsserts(asserts, status, body, resultTime) {
+  if (!asserts || asserts.length === 0) return [];
+  let parsed;
+  try { parsed = typeof body === 'string' ? JSON.parse(body) : body; } catch { parsed = null; }
+
+  return asserts.map(rule => {
+    let pass = false;
+    let actual = '';
+    try {
+      switch (rule.type) {
+        case 'status':
+          pass   = status === rule.expected;
+          actual = String(status);
+          break;
+        case 'statusRange':
+          pass   = status >= rule.min && status <= rule.max;
+          actual = String(status);
+          break;
+        case 'bodyExists':
+          actual = getNestedValue(parsed, rule.path);
+          pass   = actual !== undefined && actual !== null;
+          actual = String(actual);
+          break;
+        case 'bodyContains':
+          actual = getNestedValue(parsed, rule.path);
+          pass   = actual === rule.expected;
+          actual = String(actual);
+          break;
+        case 'bodyNotEmpty': {
+          const val = getNestedValue(parsed, rule.path);
+          pass   = Array.isArray(val) ? val.length > 0 : !!(val && Object.keys(val).length > 0);
+          actual = JSON.stringify(val);
+          break;
+        }
+        case 'bodySchema':
+          pass   = Array.isArray(rule.requiredKeys) &&
+                   rule.requiredKeys.every(k => getNestedValue(parsed, k) !== undefined);
+          actual = JSON.stringify(Object.keys(parsed || {}));
+          break;
+        case 'bodyArrayLength': {
+          const arrVal = getNestedValue(parsed, rule.path);
+          const len    = Array.isArray(arrVal) ? arrVal.length : -1;
+          pass         = len >= (rule.min ?? 0) && len <= (rule.max ?? Infinity);
+          actual       = String(len);
+          break;
+        }
+        case 'responseTime':
+          pass   = (resultTime ?? Infinity) <= rule.maxMs;
+          actual = (resultTime ?? '?') + 'ms';
+          break;
+      }
+    } catch(e) { actual = 'ERROR: ' + e.message; }
+    return { ...rule, pass, actual };
+  });
+}
+
+function extractContext(extracts, body) {
+  if (!extracts || extracts.length === 0) return;
+  let parsed;
+  try { parsed = typeof body === 'string' ? JSON.parse(body) : body; } catch { return; }
+  extracts.forEach(rule => {
+    const val = getNestedValue(parsed, rule.from.replace('body.', ''));
+    if (val !== undefined && val !== null) HarnessContext.set(rule.ctxKey, val);
+  });
+}
+
+function injectContext(injects, ep, bodyStr) {
+  if (!injects || injects.length === 0) return { ep, bodyStr };
+  let newEp   = { ...ep, parameters: [...(ep.parameters || [])] };
+  let newBody = bodyStr;
+
+  injects.forEach(rule => {
+    const val = HarnessContext.get(rule.ctxKey);
+    if (val === undefined) return;
+
+    if (rule.into === 'path') {
+      newEp = { ...newEp, fullPath: (newEp.fullPath || newEp.path).replace(`{${rule.param}}`, encodeURIComponent(String(val))) };
+    } else if (rule.into === 'body' && newBody) {
+      try {
+        const obj      = JSON.parse(newBody);
+        const arrMatch = rule.param.match(/^(.+)\[(\d+)\]$/);
+        if (arrMatch) {
+          const arrKey = arrMatch[1];
+          const arrIdx = parseInt(arrMatch[2]);
+          if (!Array.isArray(obj[arrKey])) obj[arrKey] = [];
+          obj[arrKey][arrIdx] = val;
+        } else {
+          const keys = rule.param.split('.');
+          let cur = obj;
+          keys.slice(0, -1).forEach(k => { if (!cur[k]) cur[k] = {}; cur = cur[k]; });
+          cur[keys[keys.length - 1]] = val;
+        }
+        newBody = JSON.stringify(obj, null, 2);
+      } catch {}
+    }
+  });
+  return { ep: newEp, bodyStr: newBody };
+}
+
+function showProgress(pct) {
+  const wrap = document.getElementById('progressWrap');
+  const bar  = document.getElementById('progressBar');
+  if (pct < 0) { wrap.style.display = 'none'; bar.style.width = '0%'; return; }
+  wrap.style.display = 'block';
+  bar.style.width = pct + '%';
+}
+
+function matchScenarioApi(ep, rule) {
+  if (ep.method !== rule.method) return false;
+  if (rule.pathIncludes  && !ep.path.includes(rule.pathIncludes))  return false;
+  if (rule.pathIncludes2 && !ep.path.includes(rule.pathIncludes2)) return false;
+  if (rule.pathNotIncludes) {
+    const nots = rule.pathNotIncludes.split('|');
+    if (nots.some(n => ep.path.includes(n))) return false;
+  }
+  return true;
+}
+
+function getScenarioEndpoints(fileIdx, scenario) {
+  const allEps = swaggerData[fileIdx]?.endpoints ?? [];
+  const ordered = [];
+  scenario.apis.forEach(rule => {
+    const found = allEps.filter(ep => matchScenarioApi(ep, rule));
+    found.forEach(ep => { if (!ordered.includes(ep)) ordered.push(ep); });
+  });
+  return ordered;
+}
+
+/* ── State ─────────────────────────────────────────────────────────── */
+let swaggerData   = {};   // { fileIndex: { spec, endpoints[] } }
+let activeFile    = 0;
+let activeScenario = null; // null = 전체
+let results       = {};   // { `${fileIndex}:${method}:${path}` : resultObj }
+let savedBodies    = {};   // 사용자가 편집·저장한 Request Body { key: string }
+let originalBodies = {};  // Swagger 스펙 기반 초기 body { key: string }
+let savedParams   = {};   // 사용자가 입력한 파라미터 값 { `${key}-${paramName}` : string }
+let selectedKey   = null;
+
+/* ── Masked fields list ─────────────────────────────────────────────── */
+const SECURE_FIELDS = ['domainId', 'projectId', 'credId', 'credSecret', 'authToken'];
+const STORAGE_KEYS  = { domainId: 'sc_did', projectId: 'sc_pid', credId: 'sc_cid', credSecret: 'sc_csec', authToken: 'sc_tok', baseUrl: 'sc_url' };
+
+/* ══════════════════════════════════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════════════════════════════════ */
+const PLAIN_FIELDS = ['baseUrl'];
+
+function saveAuth() {
+  for (const [id, key] of Object.entries(STORAGE_KEYS)) {
+    const val = document.getElementById(id).value;
+    if (val) {
+      const encoded = PLAIN_FIELDS.includes(id) ? val : btoa(unescape(encodeURIComponent(val)));
+      localStorage.setItem(key, encoded);
+    } else {
+      localStorage.removeItem(key);
+    }
+  }
+  flashSavedNotice();
+  alert('인증 정보가 저장되었습니다.');
+}
+
+function loadAuth() {
+  for (const [id, key] of Object.entries(STORAGE_KEYS)) {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      try {
+        document.getElementById(id).value = PLAIN_FIELDS.includes(id)
+          ? raw
+          : decodeURIComponent(escape(atob(raw)));
+      } catch { localStorage.removeItem(key); }
+    }
+  }
+  updateSavedNotice();
+}
+
+function flashSavedNotice() {
+  updateSavedNotice();
+}
+
+function updateSavedNotice() {
+  const hasAny = SECURE_FIELDS.some(id => {
+    const key = STORAGE_KEYS[id];
+    return !!localStorage.getItem(key);
+  });
+  document.getElementById('savedNotice').classList.toggle('show', hasAny);
+}
+
+function toggleEye(fieldId, btn) {
+  const el = document.getElementById(fieldId);
+  if (el.type === 'password') {
+    el.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    el.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+function showClearDialog() { document.getElementById('clearOverlay').classList.add('show'); }
+function hideClearDialog()  { document.getElementById('clearOverlay').classList.remove('show'); }
+
+function clearAll() {
+  Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+  SECURE_FIELDS.forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('baseUrl').value = '';
+  hideClearDialog();
+  updateSavedNotice();
+  alert('초기화되었습니다.');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SUBSCRIPTION PICKER
+══════════════════════════════════════════════════════════════════════ */
+const SUB_ALIASES     = ['subscription','subscriptionName','subscription_name','subscriptionId','subscription_id','subscription.name'];
+const TOPIC_ALIASES   = ['topic','topicName','topic_name','topicId','topic_id','topic.name'];
+const DOMAIN_ALIASES  = ['domain','domainId','domain_id','domainID','subscription.domain','topic.domain'];
+const PROJECT_ALIASES = ['project','projectId','project_id','projectID','subscription.project','topic.project'];
+
+// 파라미터 표시명 정규화: subscription.domain → domain, topic.project → project 등
+function normalizeParamName(name) {
+  if (DOMAIN_ALIASES.includes(name))  return 'domain';
+  if (PROJECT_ALIASES.includes(name)) return 'project';
+  return name;
+}
+
+// 쿼리/헤더 전송 시 사용할 실제 키도 정규화 (domain, project 로 통일)
+function resolvedParamKey(name) {
+  if (DOMAIN_ALIASES.includes(name))  return 'domain';
+  if (PROJECT_ALIASES.includes(name)) return 'project';
+  return name;
+}
+let _topicNameCb        = null;   // 토픽 이름 확인 후 실행할 콜백
+let _subPickerTargetId  = null;   // 단일 파라미터 inputId
+let _subPickerItems     = [];
+let _subPickerRunAllCb  = null;   // 전체 실행 콜백
+let _subPickerMode      = 'subscription'; // 'subscription' | 'topic'
+
+// ── 단일 파라미터 모드로 열기 ─────────────────────────────────────────
+async function openSubPicker(inputId, mode = 'subscription') {
+  _subPickerTargetId = inputId;
+  _subPickerMode     = mode;
+  document.getElementById('subPickerSearch').value = '';
+  document.getElementById('subPickerOverlay').classList.add('show');
+  await refreshSubList();
+}
+
+function hideSubPicker() {
+  document.getElementById('subPickerOverlay').classList.remove('show');
+  _subPickerTargetId = null;
+  _subPickerRunAllCb = null;
+  _subPickerMode     = 'subscription';
+}
+
+// ── 목록 API 호출 ────────────────────────────────────────────────────
+async function refreshSubList() {
+  const bodyEl = document.getElementById('subPickerBody');
+  bodyEl.innerHTML = '<div class="sub-picker-empty"><span class="spinner"></span> 불러오는 중...</div>';
+  document.getElementById('subPickerCount').textContent = '';
+
+  const domainVal  = document.getElementById('domainId').value.trim();
+  const projectVal = document.getElementById('projectId').value.trim();
+
+  let base = document.getElementById('baseUrl').value.trim();
+  if (!base) {
+    const spec = swaggerData[activeFile]?.spec;
+    base = (spec?.servers?.[0]?.url || (spec?.host ? `${spec.schemes?.[0]||'https'}://${spec.host}` : '')).replace(/\/$/, '');
+  }
+
+  if (!domainVal || !projectVal) {
+    bodyEl.innerHTML = '<div class="sub-picker-empty">⚠️ Domain-ID 와 Project-ID를 먼저 입력하세요.</div>';
+    return;
+  }
+
+  const endpoint = _subPickerMode === 'topic' ? 'topics' : 'subscriptions';
+  const url = `${base}/v1/domains/${encodeURIComponent(domainVal)}/projects/${encodeURIComponent(projectVal)}/${endpoint}`;
+
+  try {
+    const useProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    let data;
+    if (useProxy) {
+      const r = await fetch('/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, method: 'GET', headers: getAuthHeaders() }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      data = JSON.parse(d.body);
+    } else {
+      const r = await fetch(url, { headers: getAuthHeaders() });
+      data = await r.json();
+    }
+
+    const items = extractNames(data, _subPickerMode);
+    _subPickerItems = items;
+
+    const label = _subPickerMode === 'topic' ? 'Topic' : 'Subscription';
+    if (items.length === 0) {
+      bodyEl.innerHTML = `<div class="sub-picker-empty">${label} 목록이 비어 있습니다.</div>`;
+    } else {
+      renderSubList(items);
+    }
+    document.getElementById('subPickerCount').textContent = `총 ${items.length}개`;
+  } catch(e) {
+    bodyEl.innerHTML = `<div class="sub-picker-empty" style="color:var(--danger)">⚠️ ${e.message}</div>`;
+  }
+}
+
+function extractNames(data, mode) {
+  const key = mode === 'topic' ? 'topics' : 'subscriptions';
+  const candidates = data?.[key] ?? data?.items ?? data?.data ?? data?.result ?? (Array.isArray(data) ? data : []);
+  return candidates
+    .map(item => {
+      const name = item?.name ?? item?.topicName ?? item?.subscriptionName ?? (typeof item === 'string' ? item : null);
+      if (!name) return null;
+      const type = item?.subscriptionType ?? item?.type ?? null;
+      return { name, type };
+    })
+    .filter(Boolean);
+}
+
+// 하위 호환용 래퍼 (name 문자열 배열)
+function extractSubscriptionNames(data) { return extractNames(data, 'subscription').map(i => i.name); }
+
+function subTypeBadge(type) {
+  if (!type || type === 'UNKNOWN') return '';
+  const label = type === 'OBJECT_STORAGE' ? 'Object Storage' : type;
+  return `<span class="sub-type-badge sub-type-${type}">${label}</span>`;
+}
+
+function renderSubList(items) {
+  const query    = document.getElementById('subPickerSearch').value.toLowerCase();
+  const filtered = items.filter(i => !query || i.name.toLowerCase().includes(query));
+  const bodyEl   = document.getElementById('subPickerBody');
+
+  if (filtered.length === 0) {
+    bodyEl.innerHTML = '<div class="sub-picker-empty">검색 결과가 없습니다.</div>';
+    return;
+  }
+
+  bodyEl.innerHTML = filtered.map(({ name, type }) => `
+    <div class="sub-picker-item" onclick="selectSubscription('${escHtml(name)}')">
+      <span class="sub-name">${escHtml(name)}</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        ${subTypeBadge(type)}
+        <button class="sub-select-btn">선택</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterSubList() {
+  if (_subPickerItems.length > 0) renderSubList(_subPickerItems);
+}
+
+function applyPickerValueToParams(name, mode) {
+  const aliases = mode === 'topic' ? TOPIC_ALIASES : SUB_ALIASES;
+  const data = swaggerData[activeFile];
+  if (!data?.endpoints) return;
+  data.endpoints.forEach(ep => {
+    const key = itemKey(activeFile, ep);
+    ep.parameters.forEach(p => {
+      if (!aliases.includes(p.name)) return;
+      const inputId = `param-${key}-${p.name}`;
+      const el = document.getElementById(inputId);
+      if (el) el.value = name;
+      savedParams[`${key}-${p.name}`] = name;
+    });
+  });
+}
+
+function selectSubscription(name) {
+  applyPickerValueToParams(name, _subPickerMode);
+  if (_subPickerRunAllCb) {
+    const cb = _subPickerRunAllCb;
+    hideSubPicker();
+    cb(name);
+  } else if (_subPickerTargetId) {
+    const el = document.getElementById(_subPickerTargetId);
+    if (el) el.value = name;
+    hideSubPicker();
+  }
+}
+
+/* ── Mask sensitive values in display ─────────────────────────────── */
+function maskValue(val) { return val ? '●'.repeat(Math.min(val.length, 20)) : ''; }
+
+function getAuthHeaders() {
+  const domainId   = document.getElementById('domainId').value.trim();
+  const projectId  = document.getElementById('projectId').value.trim();
+  const credId     = document.getElementById('credId').value.trim();
+  const credSecret = document.getElementById('credSecret').value.trim();
+  const authToken  = document.getElementById('authToken').value.trim();
+  const headers = {};
+  if (domainId)   headers['Domain-ID']         = domainId;
+  if (projectId)  headers['Project-ID']         = projectId;
+  if (credId)     headers['Credential-ID']      = credId;
+  if (credSecret) headers['Credential-Secret']  = credSecret;
+  if (authToken)  headers['X-Auth-Token']        = authToken;
+  headers['Content-Type'] = 'application/json';
+  return headers;
+}
+
+function getMaskedUrl(url) {
+  const domainVal  = document.getElementById('domainId').value.trim();
+  const projectVal = document.getElementById('projectId').value.trim();
+  let masked = url;
+  if (domainVal)  masked = masked.replaceAll(encodeURIComponent(domainVal), '{domain}').replaceAll(domainVal, '{domain}');
+  if (projectVal) masked = masked.replaceAll(encodeURIComponent(projectVal), '{project}').replaceAll(projectVal, '{project}');
+  return masked;
+}
+
+function getMaskedHeaders(headers) {
+  const masked = { ...headers };
+  ['Domain-ID', 'Project-ID', 'Credential-ID', 'Credential-Secret', 'X-Auth-Token'].forEach(k => {
+    if (masked[k]) masked[k] = '●'.repeat(16);
+  });
+  return masked;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SWAGGER LOADING
+══════════════════════════════════════════════════════════════════════ */
+async function loadAllSwagger() {
+  for (let i = 0; i < SWAGGER_FILES.length; i++) {
+    try {
+      const res  = await fetch(SWAGGER_FILES[i].file);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const spec = await res.json();
+      swaggerData[i] = { spec, endpoints: parseEndpoints(spec) };
+    } catch (e) {
+      swaggerData[i] = { spec: null, endpoints: [], error: e.message };
+    }
+  }
+  renderTabs();
+  renderApiList();
+  updateStats();
+}
+
+function parseEndpoints(spec) {
+  const eps = [];
+  const paths = spec.paths || {};
+  const basePath = spec.basePath || '';
+  for (const [path, methods] of Object.entries(paths)) {
+    for (const [method, op] of Object.entries(methods)) {
+      if (['get','post','put','delete','patch','options','head'].includes(method)) {
+        eps.push({
+          method:      method.toUpperCase(),
+          path,
+          fullPath:    basePath + path,
+          summary:     op.summary || op.operationId || '',
+          description: op.description || getApiDescription(method.toUpperCase(), path),
+          title:       getApiTitle(method.toUpperCase(), path),
+          parameters:  op.parameters || [],
+          requestBody: op.requestBody || null,
+          responses:   op.responses || {},
+          operationId: op.operationId || '',
+          tags:        op.tags || [],
+        });
+      }
+    }
+  }
+  return eps;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════════════════════════ */
+function renderTabs() {
+  const sel = document.getElementById('fileSelect');
+  sel.innerHTML = '';
+  SWAGGER_FILES.forEach((f, i) => {
+    const d   = swaggerData[i];
+    const cnt = d ? d.endpoints.length : 0;
+    const err = d && d.error;
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${err ? '⚠️ ' : ''}${f.name}  (${cnt}개)`;
+    opt.title = err ? `로드 실패: ${d.error}` : f.file;
+    sel.appendChild(opt);
+  });
+  sel.value = activeFile;
+  updateFileCountBadge();
+}
+
+function updateFileCountBadge() {
+  const badge = document.getElementById('apiCountBadge');
+  const d = swaggerData[activeFile];
+  if (!d) { badge.textContent = '0'; badge.className = 'api-count-badge'; return; }
+  if (d.error) { badge.textContent = '!'; badge.className = 'api-count-badge error'; return; }
+  badge.textContent = d.endpoints.length;
+  badge.className = 'api-count-badge';
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   API LIST
+══════════════════════════════════════════════════════════════════════ */
+function renderScenarioSelect() {
+  const sel       = document.getElementById('scenarioSelect');
+  const fileName  = SWAGGER_FILES[activeFile]?.name ?? '';
+  const available = SCENARIOS.filter(s => s.appliesTo.includes(fileName));
+
+  sel.innerHTML = '<option value="">전체 API 실행</option>' +
+    available.map(s => `<option value="${s.id}">${s.emoji} ${s.name}</option>`).join('');
+  sel.value = activeScenario ?? '';
+}
+
+function onScenarioChange(val) {
+  activeScenario = val || null;
+  const btn = document.getElementById('runAllBtn');
+  if (activeScenario) {
+    const sc = SCENARIOS.find(s => s.id === activeScenario);
+    btn.textContent = `▶ 시나리오 실행`;
+    btn.title = sc?.name ?? '';
+  } else {
+    btn.textContent = '▶ 전체 실행';
+    btn.title = '';
+  }
+  renderApiList();
+}
+
+function onRunBtnClick() {
+  if (activeScenario) {
+    runScenario(activeScenario);
+  } else {
+    runAll();
+  }
+}
+
+function renderApiList() {
+  const listEl  = document.getElementById('apiList');
+  const filter  = document.getElementById('filterInput').value.toLowerCase();
+  const data    = swaggerData[activeFile];
+
+  if (!data) {
+    listEl.innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">로딩 중...</div>';
+    return;
+  }
+  if (data.error) {
+    listEl.innerHTML = `<div style="padding:16px;color:var(--danger)">⚠️ 파일 로드 실패<br><code style="font-size:11px">${data.error}</code><br><small>./swagger/ 폴더에 JSON 파일을 넣어주세요</small></div>`;
+    return;
+  }
+
+  // 시나리오 선택 시 해당 API만 표시 (순서 유지)
+  let baseEps = data.endpoints;
+  if (activeScenario) {
+    const sc = SCENARIOS.find(s => s.id === activeScenario);
+    if (sc) baseEps = getScenarioEndpoints(activeFile, sc);
+  }
+
+  const eps = baseEps.filter(ep =>
+    !filter ||
+    ep.path.toLowerCase().includes(filter) ||
+    ep.summary.toLowerCase().includes(filter) ||
+    ep.method.toLowerCase().includes(filter)
+  );
+
+  if (eps.length === 0) {
+    listEl.innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">엔드포인트가 없습니다</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  eps.forEach(ep => {
+    const key    = itemKey(activeFile, ep);
+    const result = results[key];
+    const assertData = result?.assertResults;
+    const assertFail = assertData && assertData.length > 0 && !assertData.every(a => a.pass);
+    const statusIcon = result
+      ? (result.loading ? '<span class="spinner"></span>'
+        : assertFail   ? '⚠️'
+        : result.ok    ? '✅' : '❌')
+      : '⏳';
+
+    const item = document.createElement('div');
+    item.className = 'api-item'
+      + (selectedKey === key ? ' selected' : '')
+      + (!result || result.loading ? ''
+        : assertFail  ? ' result-warn'
+        : result.ok   ? ' result-pass' : ' result-fail');
+    item.dataset.key = key;
+    item.innerHTML = `
+      <div class="api-item-header">
+        <span class="method-badge method-${ep.method}">${ep.method}</span>
+        <span class="api-path" title="${ep.fullPath}">${ep.fullPath || ep.path}</span>
+      </div>
+      ${ep.title ? `<div class="api-summary">${ep.title}</div>` : (ep.summary ? `<div class="api-summary">${ep.summary}</div>` : '')}
+      <div class="api-item-footer">
+        <span class="status-icon">${statusIcon}</span>
+        ${result && !result.loading ? `<span style="font-size:11px;color:var(--text-muted)">${result.status || 'ERR'} · ${result.time}ms</span>` : ''}
+        <button class="run-btn-sm" onclick="runSingle(event, ${activeFile}, '${ep.method}', '${ep.path}')">▶ 실행</button>
+      </div>
+    `;
+    item.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      selectedKey = key;
+      renderApiList();
+      showDetail(activeFile, ep);
+    });
+    listEl.appendChild(item);
+  });
+}
+
+function itemKey(fileIdx, ep) { return `${fileIdx}:${ep.method}:${ep.path}`; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DETAIL PANEL
+══════════════════════════════════════════════════════════════════════ */
+function showDetail(fileIdx, ep) {
+  const key    = itemKey(fileIdx, ep);
+  const result = results[key];
+  const panel  = document.getElementById('detailPanel');
+  const data   = swaggerData[fileIdx];
+  const spec   = data.spec;
+  const serverUrl = (spec && spec.servers && spec.servers[0])
+    ? spec.servers[0].url.replace(/\/$/, '')
+    : (spec && spec.host ? `${spec.schemes?.[0] || 'https'}://${spec.host}` : '');
+  const baseUrlInput = document.getElementById('baseUrl').value.trim();
+  const base   = baseUrlInput || serverUrl || '';
+  const fullUrl = base + (ep.fullPath || ep.path);
+
+  // Build param rows
+  const queryParams = ep.parameters.filter(p => p.in === 'query');
+  const pathParams  = ep.parameters.filter(p => p.in === 'path');
+  const headerParams= ep.parameters.filter(p => p.in === 'header');
+  const bodySchema  = getBodySchema(ep, spec);
+
+  // body 파라미터는 파라미터 목록에서 제외 (Request Body 섹션에서 별도 처리)
+  const visibleParams = ep.parameters.filter(p => p.in !== 'body');
+
+  let paramsHtml = '';
+  if (visibleParams.length > 0) {
+    paramsHtml = `
+      <div class="detail-card">
+        <div class="detail-card-header">📋 파라미터</div>
+        <div class="detail-card-body">
+          <div class="param-editor" id="params-${key}">
+            ${visibleParams.map(p => {
+              const _domainAliases  = DOMAIN_ALIASES;
+              const _projectAliases = PROJECT_ALIASES;
+              const _domainVal  = document.getElementById('domainId').value.trim();
+              const _projectVal = document.getElementById('projectId').value.trim();
+              const autoVal = _domainAliases.includes(p.name)  ? _domainVal
+                            : _projectAliases.includes(p.name) ? _projectVal
+                            : '';
+              const isAuto    = !!autoVal;
+              // 자동입력이 아닌 경우, 이전에 사용자가 입력한 값 복원
+              const savedVal  = !isAuto ? (savedParams[`${key}-${p.name}`] ?? '') : '';
+              const inputId  = `param-${key}-${p.name}`;
+              const eyeId       = `eye-${key}-${p.name}`;
+              const isSub       = SUB_ALIASES.includes(p.name);
+              const isTopicParam = TOPIC_ALIASES.includes(p.name) && !isAuto;
+              const displayName = normalizeParamName(p.name);
+
+              // subscription / topic 파라미터 → 드롭다운
+              if (isSub || isTopicParam) {
+                const placeholder = isSub ? '⏳ 목록 불러오는 중...' : '⏳ 목록 불러오는 중...';
+                return `
+              <div class="param-row">
+                <label>
+                  ${displayName}
+                  ${p.required ? '<span class="req">*필수</span>' : ''}
+                  <small style="color:var(--text-muted);font-size:10px">${p.description || ''}</small>
+                </label>
+                <span class="param-in-badge">${p.in}</span>
+                <select
+                  id="${inputId}"
+                  data-in="${p.in}"
+                  data-name="${p.name}"
+                  style="flex:1;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-size:13px;background:var(--surface2);color:var(--text);outline:none;cursor:pointer"
+                  onchange="savedParams['${key}-${p.name}']=this.value"
+                >
+                  <option value="" disabled selected>${placeholder}</option>
+                </select>
+              </div>`;
+              }
+
+              return `
+              <div class="param-row">
+                <label>
+                  ${displayName}
+                  ${p.required ? '<span class="req">*필수</span>' : ''}
+                  <small style="color:var(--text-muted);font-size:10px">${p.description || ''}</small>
+                </label>
+                <span class="param-in-badge">${p.in}</span>
+                <div class="input-wrap" style="flex:1">
+                  <input
+                    type="${isAuto ? 'password' : 'text'}"
+                    id="${inputId}"
+                    value="${isAuto ? autoVal : savedVal}"
+                    placeholder="${isAuto ? '' : (p.schema?.example ?? p.example ?? p.schema?.type ?? '')}"
+                    data-in="${p.in}"
+                    data-name="${p.name}"
+                    style="${isAuto ? 'background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;width:100%;padding-right:32px' : 'width:100%'}"
+                  />
+                  ${isAuto ? `<button class="eye-btn" id="${eyeId}" onclick="toggleEye('${inputId}', this)" title="보기/숨기기">👁</button>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  let bodyHtml = '';
+  if (['POST','PUT','PATCH'].includes(ep.method)) {
+    const savedBody   = savedBodies[key];
+    const defaultBody = bodySchema ? JSON.stringify(buildExample(bodySchema), null, 2) : '{}';
+    originalBodies[key] = defaultBody;   // 초기값 보존
+    const exampleBody = savedBody ?? defaultBody;
+    bodyHtml = `
+      <div class="detail-card">
+        <div class="detail-card-header">📦 Request Body</div>
+        <div class="detail-card-body">
+          <textarea id="body-${key}" style="width:100%;height:160px;font-family:'Fira Code',monospace;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:10px;resize:vertical;background:var(--surface2);outline:none" oninput="autoSaveBody('${key}', this)">${exampleBody}</textarea>
+          <div id="bodyErrMsg-${key}" style="display:none;margin-top:4px;font-size:11px;color:var(--danger)"></div>
+          <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:8px">
+            <span id="bodySaveMsg-${key}" style="font-size:11px;color:var(--success);display:none">✅ 저장됨</span>
+            <button class="btn-ghost btn-sm" onclick="resetBody('${key}')" title="초기값으로 되돌리기">↩ 초기화</button>
+            <button class="btn-primary btn-sm" onclick="saveBody('${key}')">💾 저장</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  let resultHtml = '';
+  if (result && !result.loading) {
+    const statusClass = !result.status ? 'status-err'
+      : result.status < 300 ? 'status-2xx'
+      : result.status < 400 ? 'status-3xx'
+      : result.status < 500 ? 'status-4xx' : 'status-5xx';
+    const maskedReq = result.requestHeaders ? getMaskedHeaders(result.requestHeaders) : {};
+    resultHtml = `
+      <div class="detail-card">
+        <div class="detail-card-header">📤 요청 정보</div>
+        <div class="detail-card-body">
+          <table class="info-table">
+            <tr><th>Method</th><td><span class="method-badge method-${ep.method}">${ep.method}</span></td></tr>
+            <tr><th>URL</th><td>${getMaskedUrl(result.url || fullUrl)}</td></tr>
+            <tr><th>Headers</th><td><pre style="margin:0;font-size:11px">${JSON.stringify(maskedReq, null, 2)}</pre></td></tr>
+            ${result.requestBody ? `<tr><th>Body</th><td><pre style="margin:0;font-size:11px">${escHtml(JSON.stringify(JSON.parse(result.requestBody), null, 2))}</pre></td></tr>` : ''}
+          </table>
+        </div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-card-header">
+          📥 응답 결과
+          <span class="status-badge ${statusClass}" style="margin-left:auto">${result.status || 'ERROR'}</span>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:8px">⏱ ${result.time}ms</span>
+        </div>
+        <div class="detail-card-body">
+          ${result.error
+            ? `<div style="color:var(--danger);font-size:13px">⚠️ ${escHtml(result.error)}</div>`
+            : `<pre class="code-block">${formatJsonTree(result.body)}</pre>`
+          }
+        </div>
+      </div>`;
+
+    const assertResults = result.assertResults;
+    if (assertResults && assertResults.length > 0) {
+      resultHtml += `
+      <div class="detail-card">
+        <div class="detail-card-header">
+          🔍 Assert 결과
+          <span style="margin-left:auto;font-size:11px;color:${assertResults.every(a=>a.pass)?'var(--success)':'var(--danger)'}">
+            ${assertResults.filter(a=>a.pass).length}/${assertResults.length} Pass
+          </span>
+        </div>
+        <div class="detail-card-body">
+          ${assertResults.map(a => `
+            <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+              <span style="color:${a.pass?'var(--success)':'var(--danger)'}">${a.pass?'✅':'❌'}</span>
+              <code style="font-size:11px;color:var(--primary)">${a.type}</code>
+              ${a.path ? `<span style="font-size:11px;color:var(--text-muted)">.${a.path}</span>` : ''}
+              ${a.expected !== undefined ? `<span style="font-size:11px">기대: <code>${a.expected}</code></span>` : ''}
+              ${a.actual !== undefined ? `<span style="font-size:11px;margin-left:auto;color:var(--text-muted)">실제: <code>${String(a.actual).slice(0,40)}</code></span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    }
+  }
+
+  panel.innerHTML = `
+    <div class="detail-card">
+      <div class="detail-card-header">
+        <span class="method-badge method-${ep.method}">${ep.method}</span>
+        <span class="endpoint-url">${fullUrl}</span>
+        ${ep.tags.map(t=>`<span class="tag">${t}</span>`).join('')}
+      </div>
+      <div class="detail-card-body">
+        ${ep.summary     ? `<div class="endpoint-desc"><strong>${ep.summary}</strong></div>` : ''}
+        ${ep.description ? `<div class="endpoint-desc" style="font-size:12px;color:var(--text-muted);background:var(--surface2);border-left:3px solid var(--primary);padding:7px 10px;border-radius:0 4px 4px 0;margin-bottom:8px">💡 ${ep.description}</div>` : ''}
+        <div class="run-row">
+          <button class="btn-primary btn-sm" onclick="runSingle(event, ${fileIdx}, '${ep.method}', '${ep.path}')">▶ 이 API 실행</button>
+          <span id="runStatus-${key}" style="font-size:12px;color:var(--text-muted)"></span>
+        </div>
+      </div>
+    </div>
+    ${paramsHtml}
+    ${bodyHtml}
+    ${resultHtml}
+  `;
+
+  // subscription / topic 드롭다운 자동 로드
+  const subParams   = visibleParams.filter(p => SUB_ALIASES.includes(p.name));
+  const topicParams = visibleParams.filter(p => TOPIC_ALIASES.includes(p.name) && !DOMAIN_ALIASES.includes(p.name) && !PROJECT_ALIASES.includes(p.name));
+  subParams.forEach(p   => loadSubDropdown(`param-${key}-${p.name}`,   savedParams[`${key}-${p.name}`] ?? ''));
+  topicParams.forEach(p => loadTopicDropdown(`param-${key}-${p.name}`, savedParams[`${key}-${p.name}`] ?? ''));
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RUN
+══════════════════════════════════════════════════════════════════════ */
+async function runSingle(evt, fileIdx, method, path) {
+  evt.stopPropagation();
+  const data = swaggerData[fileIdx];
+  if (!data || data.error) { alert('Swagger 파일이 로드되지 않았습니다.'); return; }
+
+  const ep  = data.endpoints.find(e => e.method === method && e.path === path);
+  if (!ep) return;
+
+  const key = itemKey(fileIdx, ep);
+
+  // 상세 패널이 열려 있지 않으면 먼저 열기 (파라미터 입력 필드 렌더링 필요)
+  if (selectedKey !== key) {
+    selectedKey = key;
+    renderApiList();
+    showDetail(fileIdx, ep);
+    // 렌더링 후 다음 틱에서 유효성 검사
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  // 필수 파라미터 유효성 검사
+  if (!validateRequiredParams(ep, key)) return;
+
+  // 실행 전 현재 파라미터 입력값 저장
+  saveCurrentParams(ep, key);
+
+  results[key] = { loading: true };
+  renderApiList();
+
+  const result = await executeApi(fileIdx, ep);
+  results[key] = result;
+  checkAuthError(result);
+
+  renderApiList();
+  updateStats();
+  showDetail(fileIdx, ep);
+}
+
+function saveCurrentParams(ep, key) {
+  ep.parameters.filter(p => p.in !== 'body').forEach(p => {
+    const el = document.getElementById(`param-${key}-${p.name}`);
+    if (el) savedParams[`${key}-${p.name}`] = el.value;
+  });
+}
+
+function validateRequiredParams(ep, key) {
+  const domainVal  = document.getElementById('domainId').value.trim();
+  const projectVal = document.getElementById('projectId').value.trim();
+
+  let hasError = false;
+
+  ep.parameters.forEach(p => {
+    if (!p.required) return;
+
+    // 자동입력 필드는 skip
+    if (DOMAIN_ALIASES.includes(p.name)  && domainVal)  return;
+    if (PROJECT_ALIASES.includes(p.name) && projectVal) return;
+
+    const el = document.getElementById(`param-${key}-${p.name}`);
+    if (!el) return;
+
+    const val = el.value?.trim() ?? '';
+    const isEmpty = !val || (el.tagName === 'SELECT' && el.selectedIndex <= 0);
+    if (isEmpty) {
+      setParamError(el, '필수 입력값입니다.');
+      hasError = true;
+    } else {
+      clearParamError(el);
+    }
+  });
+
+  if (hasError) {
+    // 첫 번째 에러 필드로 스크롤
+    const firstErr = document.querySelector('.param-input-error');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  return !hasError;
+}
+
+function setParamError(inputEl, msg) {
+  inputEl.style.borderColor = 'var(--danger)';
+  inputEl.style.backgroundColor = '#fff5f5';
+  // param-row 안에서 기존 에러 메시지 제거 후 재삽입 (중복 방지)
+  const row = inputEl.closest('.param-row');
+  if (row) {
+    row.querySelectorAll('.param-error-msg').forEach(e => e.remove());
+    const errEl = document.createElement('div');
+    errEl.className = 'param-error-msg';
+    errEl.textContent = msg;
+    errEl.style.cssText = 'font-size:11px;color:var(--danger);margin-top:3px;font-weight:500;grid-column:1/-1';
+    row.appendChild(errEl);
+  }
+  const evtType = inputEl.tagName === 'SELECT' ? 'change' : 'input';
+  inputEl.addEventListener(evtType, () => clearParamError(inputEl), { once: true });
+}
+
+function clearParamError(inputEl) {
+  inputEl.style.borderColor = '';
+  inputEl.style.backgroundColor = '';
+  const row = inputEl.closest('.param-row');
+  if (row) row.querySelectorAll('.param-error-msg').forEach(e => e.remove());
+}
+
+/* ── Request Body 저장/초기화 ──────────────────────────────────────── */
+/* ── Subscription 드롭다운 로드 ─────────────────────────────────────── */
+async function _fetchResourceList(endpoint, mode) {
+  const domainVal  = document.getElementById('domainId').value.trim();
+  const projectVal = document.getElementById('projectId').value.trim();
+  let base = document.getElementById('baseUrl').value.trim();
+  if (!base) {
+    const spec = swaggerData[activeFile]?.spec;
+    base = (spec?.servers?.[0]?.url || (spec?.host ? `${spec.schemes?.[0]||'https'}://${spec.host}` : '')).replace(/\/$/, '');
+  }
+  if (!domainVal || !projectVal) throw new Error('Domain-ID / Project-ID를 먼저 입력하세요');
+
+  const url = `${base}/v1/domains/${encodeURIComponent(domainVal)}/projects/${encodeURIComponent(projectVal)}/${endpoint}`;
+  const useProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  let data;
+  if (useProxy) {
+    const r = await fetch('/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, method: 'GET', headers: getAuthHeaders() }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    data = JSON.parse(d.body);
+  } else {
+    const r = await fetch(url, { headers: getAuthHeaders() });
+    data = await r.json();
+  }
+  return extractNames(data, mode);
+}
+
+async function loadSubDropdown(selectId, selectedVal = '') {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="" disabled selected>⏳ 불러오는 중...</option>';
+  try {
+    const domainVal  = document.getElementById('domainId').value.trim();
+    const projectVal = document.getElementById('projectId').value.trim();
+    if (!domainVal || !projectVal) {
+      sel.innerHTML = '<option value="" disabled selected>⚠️ Domain-ID / Project-ID를 먼저 입력하세요</option>';
+      return;
+    }
+    const items = await _fetchResourceList('subscriptions', 'subscription');
+    if (items.length === 0) { sel.innerHTML = '<option value="" disabled selected>목록이 비어 있습니다</option>'; return; }
+    sel.innerHTML = '<option value="" disabled>서브스크립션을 선택해주세요.</option>' +
+      items.map(({ name, type }) => {
+        const typeLabel = type && type !== 'UNKNOWN' ? ` [${type === 'OBJECT_STORAGE' ? 'Object Storage' : type}]` : '';
+        return `<option value="${escHtml(name)}" ${name === selectedVal ? 'selected' : ''}>${escHtml(name)}${typeLabel}</option>`;
+      }).join('');
+    if (!selectedVal) sel.selectedIndex = 0;
+  } catch(e) {
+    sel.innerHTML = `<option value="" disabled selected>⚠️ 로드 실패: ${e.message}</option>`;
+  }
+}
+
+async function loadTopicDropdown(selectId, selectedVal = '') {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="" disabled selected>⏳ 불러오는 중...</option>';
+  try {
+    const domainVal  = document.getElementById('domainId').value.trim();
+    const projectVal = document.getElementById('projectId').value.trim();
+    if (!domainVal || !projectVal) {
+      sel.innerHTML = '<option value="" disabled selected>⚠️ Domain-ID / Project-ID를 먼저 입력하세요</option>';
+      return;
+    }
+    const items = await _fetchResourceList('topics', 'topic');
+    if (items.length === 0) { sel.innerHTML = '<option value="" disabled selected>목록이 비어 있습니다</option>'; return; }
+    sel.innerHTML = '<option value="" disabled>토픽을 선택해주세요.</option>' +
+      items.map(({ name }) =>
+        `<option value="${escHtml(name)}" ${name === selectedVal ? 'selected' : ''}>${escHtml(name)}</option>`
+      ).join('');
+    if (!selectedVal) sel.selectedIndex = 0;
+  } catch(e) {
+    sel.innerHTML = `<option value="" disabled selected>⚠️ 로드 실패: ${e.message}</option>`;
+  }
+}
+
+/* ── Topic Name Modal ───────────────────────────────────────────────── */
+function openTopicNameModal(cb) {
+  _topicNameCb = cb;
+  const input = document.getElementById('topicNameInput');
+  input.value = '';
+  document.getElementById('topicNameError').textContent = '';
+  document.getElementById('topicNameOverlay').classList.add('show');
+  setTimeout(() => input.focus(), 100);
+}
+
+function confirmTopicName() {
+  const val = document.getElementById('topicNameInput').value.trim();
+  if (!val) {
+    document.getElementById('topicNameError').textContent = '토픽 이름을 입력해주세요.';
+    return;
+  }
+  document.getElementById('topicNameOverlay').classList.remove('show');
+  const cb = _topicNameCb;
+  _topicNameCb = null;
+  if (cb) cb(val);
+}
+
+function cancelTopicName() {
+  document.getElementById('topicNameOverlay').classList.remove('show');
+  _topicNameCb = null;
+}
+
+function isTopicCreateApi(ep) {
+  // v2 PUT /topics (body에 name 입력) = 생성
+  // v1 PUT .../topics/{topic.name} = 수정 → 제외
+  return ep.method === 'PUT' && ep.path.toLowerCase().includes('topic') && !ep.path.includes('{topic');
+}
+
+function isTopicUpdateApi(ep) {
+  // v1 PUT/PATCH .../topics/{topic.name} = 수정
+  return ['PUT','PATCH'].includes(ep.method) && ep.path.includes('{topic.name}');
+}
+
+/* ── Token Expired Toast ────────────────────────────────────────────── */
+let _toastTimer = null;
+
+function showTokenToast(statusCode) {
+  const msg = document.getElementById('tokenToastMsg');
+  msg.innerHTML = `응답 코드 <strong>${statusCode}</strong> — X-Auth-Token이 만료되었을 수 있습니다.<br>
+    Auth Panel에서 토큰을 재입력 후 <strong>💾 저장</strong>해 주세요.`;
+  const toast = document.getElementById('tokenToast');
+  toast.classList.add('show');
+  // 기존 타이머 취소 후 8초 뒤 자동 닫기
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(hideTokenToast, 8000);
+}
+
+function hideTokenToast() {
+  document.getElementById('tokenToast').classList.remove('show');
+  clearTimeout(_toastTimer);
+}
+
+function checkAuthError(result) {
+  if (!result || result.loading) return;
+  const isHttp401  = result.status === 401;
+  const isGrpc16   = result.status === 200 && (() => {
+    try { return JSON.parse(result.body)?.code === 16; } catch { return false; }
+  })();
+  const isUnauth   = result.error && /unauthorized|unauthenticated/i.test(result.error);
+  if (isHttp401 || isGrpc16 || isUnauth) showTokenToast(result.status ?? 'ERR');
+}
+
+function autoSaveBody(key, ta) {
+  // 입력할 때마다 자동으로 savedBodies에 저장 (💾 버튼 없이도 유지)
+  savedBodies[key] = ta.value;
+  ta.style.borderColor = '';
+  const err = document.getElementById(`bodyErrMsg-${key}`);
+  if (err) err.style.display = 'none';
+}
+
+function clearAllBodies() {
+  if (!confirm('모든 API의 Request Body를 초기값으로 되돌리겠습니까?\n편집한 내용이 모두 사라집니다.')) return;
+  savedBodies = {};
+  // 현재 열려 있는 detail 패널 새로고침
+  if (selectedKey) {
+    const [fileIdx, method, ...pathParts] = selectedKey.split(':');
+    const path = pathParts.join(':');
+    const ep = swaggerData[parseInt(fileIdx)]?.endpoints.find(e => e.method === method && e.path === path);
+    if (ep) showDetail(parseInt(fileIdx), ep);
+  }
+}
+
+function saveBody(key) {
+  const ta  = document.getElementById(`body-${key}`);
+  const err = document.getElementById(`bodyErrMsg-${key}`);
+  if (!ta) return;
+  // JSON 유효성 검사
+  try {
+    JSON.parse(ta.value.trim() || '{}');
+    err.style.display = 'none';
+  } catch (e) {
+    err.textContent = `⚠️ JSON 형식 오류: ${e.message}`;
+    err.style.display = 'block';
+    ta.style.borderColor = 'var(--danger)';
+    return;
+  }
+  savedBodies[key] = ta.value;
+  ta.style.borderColor = 'var(--success)';
+  const msg = document.getElementById(`bodySaveMsg-${key}`);
+  if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; ta.style.borderColor = ''; }, 2000); }
+}
+
+function resetBody(key) {
+  const ta = document.getElementById(`body-${key}`);
+  if (!ta) return;
+  const original = originalBodies[key] ?? '{}';
+  delete savedBodies[key];
+  ta.value = original;
+  ta.style.borderColor = '';
+  const err = document.getElementById(`bodyErrMsg-${key}`);
+  if (err) err.style.display = 'none';
+}
+
+function clearBodySaveMsg(key) {
+  const ta = document.getElementById(`body-${key}`);
+  if (ta) ta.style.borderColor = '';
+  const err = document.getElementById(`bodyErrMsg-${key}`);
+  if (err) err.style.display = 'none';
+}
+
+async function runScenario(scenarioId) {
+  const sc = SCENARIOS.find(s => s.id === scenarioId);
+  if (!sc) return;
+
+  const fileIdx = activeFile;
+  const data    = swaggerData[fileIdx];
+  if (!data || data.error) { alert('Swagger 파일이 로드되지 않았습니다.'); return; }
+
+  await _pickAndRunHarness(sc, fileIdx, null, null);
+}
+
+// 통합 파라미터 모달 → _runHarness
+async function _pickAndRunHarness(sc, fileIdx, globalSubName, globalTopicName) {
+  const checkRules = [...(sc.setup||[]), ...(sc.apis||[]), ...(sc.teardown||[])];
+  const checkEps   = checkRules.flatMap(r => getScenarioEndpoints(fileIdx, { apis: [r] }));
+
+  const needsSub   = globalSubName   === null && checkEps.some(ep => ep.parameters.some(p => SUB_ALIASES.includes(p.name)));
+  const needsTopic = globalTopicName === null && checkEps.some(ep => ep.parameters.some(p => TOPIC_ALIASES.includes(p.name)));
+
+  if (needsSub || needsTopic) {
+    await openRunParamsModal(needsSub, needsTopic, (subVal, topicVal) => {
+      _pickAndRunHarness(
+        sc, fileIdx,
+        needsSub   ? subVal   : globalSubName,
+        needsTopic ? topicVal : globalTopicName
+      );
+    });
+    return;
+  }
+
+  await _runHarness(sc, fileIdx, globalSubName, globalTopicName);
+}
+
+async function _runHarness(sc, fileIdx, globalSubName = null, globalTopicName = null) {
+  HarnessContext.clear();
+
+  const harnessReport = {
+    scenarioId: sc.id, scenarioName: sc.name,
+    startTime: Date.now(),
+    steps: [],
+    context: {},
+    summary: { total: 0, pass: 0, fail: 0 }
+  };
+
+  const btn = document.getElementById('runAllBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 실행 중...';
+  showProgress(0);
+
+  // ── Setup
+  for (const rule of (sc.setup || [])) {
+    const eps = getScenarioEndpoints(fileIdx, { apis: [rule] });
+    for (const ep of eps) await executeApi(fileIdx, ep, globalSubName, globalTopicName);
+  }
+
+  const stepRules = sc.apis || [];
+  let stepIdx = 0;
+
+  try {
+    for (const rule of stepRules) {
+      const eps = getScenarioEndpoints(fileIdx, { apis: [rule] });
+      for (const ep of eps) {
+        stepIdx++;
+        const key = itemKey(fileIdx, ep);
+        results[key] = { loading: true };
+        renderApiList();
+
+        const bodyEl  = document.getElementById(`body-${key}`);
+        let bodyStr   = bodyEl ? bodyEl.value : (savedBodies[key] ?? null);
+
+        const { ep: injectedEp, bodyStr: injectedBody } = injectContext(rule.inject, ep, bodyStr);
+        const result = await executeApi(fileIdx, injectedEp, globalSubName, globalTopicName, null, injectedBody);
+        results[key] = result;
+        checkAuthError(result);
+
+        if (result.ok || (result.status && result.status < 500)) {
+          extractContext(rule.extract, result.body);
+        }
+
+        const assertResults = runAsserts(rule.assert, result.status, result.body, result.time);
+        const stepPass = assertResults.length === 0 || assertResults.every(a => a.pass);
+
+        harnessReport.steps.push({
+          name: ep.summary || ep.path, method: ep.method,
+          path: injectedEp.fullPath || ep.path,
+          status: result.status, time: result.time,
+          ok: result.ok, assertResults, pass: stepPass,
+          contextSnapshot: HarnessContext.dump()
+        });
+        harnessReport.summary.total++;
+        if (stepPass) harnessReport.summary.pass++; else harnessReport.summary.fail++;
+
+        results[key] = { ...result, assertResults };
+        renderApiList();
+        updateStats();
+        showProgress(Math.round((stepIdx / stepRules.length) * 100));
+        await new Promise(r => setTimeout(r, 80));
+      }
+    }
+  } finally {
+    // ── Teardown (성공/실패 무관)
+    for (const rule of (sc.teardown || [])) {
+      try {
+        if (rule.inject) {
+          const hasCtx = rule.inject.every(i => HarnessContext.has(i.ctxKey));
+          if (!hasCtx) continue;
+        }
+        const eps = getScenarioEndpoints(fileIdx, { apis: [rule] });
+        for (const ep of eps) {
+          const { ep: injectedEp } = injectContext(rule.inject, ep, null);
+          await executeApi(fileIdx, injectedEp, globalSubName, globalTopicName);
+        }
+      } catch(e) { console.warn('Teardown 실패 (무시됨):', e); }
+    }
+
+    harnessReport.endTime   = Date.now();
+    harnessReport.totalTime = harnessReport.endTime - harnessReport.startTime;
+    harnessReport.context   = HarnessContext.dump();
+
+    document.getElementById('statTime').textContent = (harnessReport.totalTime / 1000).toFixed(1) + 's';
+    showProgress(-1);
+    btn.disabled    = false;
+    btn.textContent = activeScenario ? '▶ 시나리오 실행' : '▶ 전체 실행';
+    renderHarnessReport(harnessReport);
+    updateStats();
+  }
+}
+
+function showRunAllDialog() {
+  document.getElementById('runAllOverlay').classList.add('show');
+}
+function hideRunAllDialog() {
+  document.getElementById('runAllOverlay').classList.remove('show');
+}
+
+async function runAll() {
+  const data = swaggerData[activeFile];
+  if (!data || data.error) { alert('Swagger 파일이 로드되지 않았습니다.'); return; }
+
+  const allEps = data.endpoints;
+  if (allEps.length === 0) return;
+
+  // DELETE 제외
+  const eps = allEps.filter(ep => ep.method !== 'DELETE');
+
+  await _pickAndRun(eps, null, null);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RUN PARAMS MODAL — subscription / topic 통합 설정 모달
+══════════════════════════════════════════════════════════════════════ */
+let _runParamsOnConfirm = null;
+
+async function openRunParamsModal(needsSub, needsTopic, onConfirm) {
+  _runParamsOnConfirm = onConfirm;
+
+  const sections = document.getElementById('runParamsSections');
+  sections.innerHTML = '';
+
+  if (needsSub)   sections.appendChild(_buildParamSection('sub',   '서브스크립션 선택', 'subscription.name 또는 직접 입력'));
+  if (needsTopic) sections.appendChild(_buildParamSection('topic', '토픽 선택',       'topic.name 또는 직접 입력'));
+
+  document.getElementById('runParamsConfirmBtn').onclick = _confirmRunParams;
+  document.getElementById('runParamsOverlay').classList.add('show');
+
+  // 목록 비동기 로드
+  if (needsSub)   _loadParamList('sub',   'subscription');
+  if (needsTopic) _loadParamList('topic', 'topic');
+}
+
+function _buildParamSection(id, label, placeholder) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <div style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em">${label}</div>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <div class="input-wrap" style="flex:1">
+        <input id="runParamsInput_${id}" type="text" placeholder="${placeholder}"
+          style="width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;
+                 font-size:13px;background:var(--surface2);color:var(--text);outline:none" />
+      </div>
+    </div>
+    <input id="runParamsSearch_${id}" type="text" placeholder="🔍 목록 검색..."
+      oninput="_filterParamList('${id}')"
+      style="width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;
+             font-size:12px;background:var(--surface2);color:var(--text);outline:none;margin-bottom:4px" />
+    <div id="runParamsList_${id}"
+      style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);
+             background:var(--surface2)">
+      <div style="padding:10px;text-align:center;font-size:12px;color:var(--text-muted)">
+        <span class="spinner"></span> 불러오는 중...
+      </div>
+    </div>`;
+  return wrap;
+}
+
+let _runParamsItems = { sub: [], topic: [] };
+
+async function _loadParamList(id, mode) {
+  const listEl = document.getElementById(`runParamsList_${id}`);
+  if (!listEl) return;
+
+  const domainVal  = document.getElementById('domainId').value.trim();
+  const projectVal = document.getElementById('projectId').value.trim();
+  if (!domainVal || !projectVal) {
+    listEl.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--danger)">⚠️ Domain-ID / Project-ID를 먼저 입력하세요.</div>`;
+    return;
+  }
+
+  let base = document.getElementById('baseUrl').value.trim();
+  if (!base) {
+    const spec = swaggerData[activeFile]?.spec;
+    base = (spec?.servers?.[0]?.url || (spec?.host ? `${spec.schemes?.[0]||'https'}://${spec.host}` : '')).replace(/\/$/, '');
+  }
+
+  const endpoint = mode === 'topic' ? 'topics' : 'subscriptions';
+  const url = `${base}/v1/domains/${encodeURIComponent(domainVal)}/projects/${encodeURIComponent(projectVal)}/${endpoint}`;
+
+  try {
+    const useProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    let data;
+    if (useProxy) {
+      const r = await fetch('/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, method: 'GET', headers: getAuthHeaders() })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      data = JSON.parse(d.body);
+    } else {
+      const r = await fetch(url, { headers: getAuthHeaders() });
+      data = await r.json();
+    }
+
+    const items = extractNames(data, mode);
+    _runParamsItems[id] = items;
+    _renderParamList(id, items);
+  } catch(e) {
+    listEl.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--danger)">⚠️ ${e.message}</div>`;
+  }
+}
+
+function _renderParamList(id, items) {
+  const listEl = document.getElementById(`runParamsList_${id}`);
+  if (!listEl) return;
+  if (!items.length) {
+    listEl.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">목록이 비어 있습니다.</div>`;
+    return;
+  }
+  listEl.innerHTML = items.map(({ name, type }) => `
+    <div onclick="_selectParamItem('${id}','${escHtml(name)}')"
+      style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;
+             cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;
+             transition:background .1s"
+      onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background=''">
+      <span style="font-family:'Fira Code',monospace">${escHtml(name)}</span>
+      ${subTypeBadge(type)}
+    </div>`).join('');
+}
+
+function _filterParamList(id) {
+  const q = document.getElementById(`runParamsSearch_${id}`)?.value.toLowerCase() || '';
+  const filtered = _runParamsItems[id].filter(i => i.name.toLowerCase().includes(q));
+  _renderParamList(id, filtered);
+}
+
+function _selectParamItem(id, name) {
+  const input = document.getElementById(`runParamsInput_${id}`);
+  if (input) input.value = name;
+}
+
+function _confirmRunParams() {
+  const subVal   = document.getElementById('runParamsInput_sub')?.value.trim()   || null;
+  const topicVal = document.getElementById('runParamsInput_topic')?.value.trim() || null;
+  if (subVal)   applyPickerValueToParams(subVal,   'subscription');
+  if (topicVal) applyPickerValueToParams(topicVal, 'topic');
+  const cb = _runParamsOnConfirm;   // closeRunParamsModal이 null로 만들기 전에 저장
+  closeRunParamsModal();
+  if (cb) cb(subVal, topicVal);
+}
+
+function closeRunParamsModal() {
+  document.getElementById('runParamsOverlay').classList.remove('show');
+  _runParamsOnConfirm = null;
+}
+
+// 통합 파라미터 모달 → _doRunAll
+async function _pickAndRun(eps, globalSubName, globalTopicName, globalTopicCreateName = null) {
+  const needsSub   = globalSubName   === null && eps.some(ep => ep.parameters.some(p => SUB_ALIASES.includes(p.name)));
+  const needsTopic = globalTopicName === null && eps.some(ep => ep.parameters.some(p => TOPIC_ALIASES.includes(p.name)));
+  const needsTopicCreate = globalTopicCreateName === null && eps.some(ep => isTopicCreateApi(ep));
+
+  if (needsSub || needsTopic) {
+    await openRunParamsModal(needsSub, needsTopic, (subVal, topicVal) => {
+      _pickAndRun(
+        eps,
+        needsSub   ? subVal   : globalSubName,
+        needsTopic ? topicVal : globalTopicName,
+        globalTopicCreateName
+      );
+    });
+    return;
+  }
+
+  if (needsTopicCreate) {
+    openTopicNameModal((name) => _pickAndRun(eps, globalSubName, globalTopicName, name));
+    return;
+  }
+
+  await _doRunAll(eps, globalSubName, globalTopicName, globalTopicCreateName);
+}
+
+async function _doRunAll(eps, globalSubName, globalTopicName = null, globalTopicCreateName = null) {
+  // 모달 헤더 원복
+  document.querySelector('.sub-picker-header span').textContent = '📋 Subscription 선택';
+
+  const btn = document.getElementById('runAllBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 실행 중...';
+
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar  = document.getElementById('progressBar');
+  progressWrap.style.display = 'block';
+
+  const startAll = Date.now();
+
+  for (let i = 0; i < eps.length; i++) {
+    const ep  = eps[i];
+    const key = itemKey(activeFile, ep);
+
+    // 토픽 생성 API: 새 이름을 topic.name 필드에 반영
+    if (globalTopicCreateName && isTopicCreateApi(ep)) {
+      const paramEl = document.getElementById(`param-${key}-topic.name`);
+      if (paramEl) paramEl.value = globalTopicCreateName;
+      savedParams[`${key}-topic.name`] = globalTopicCreateName;
+    }
+    // 토픽 수정 API: 선택된 기존 토픽명을 topic.name 드롭다운에 반영
+    if (globalTopicName && isTopicUpdateApi(ep)) {
+      const paramEl = document.getElementById(`param-${key}-topic.name`);
+      if (paramEl) paramEl.value = globalTopicName;
+      savedParams[`${key}-topic.name`] = globalTopicName;
+    }
+    results[key] = { loading: true };
+    renderApiList();
+
+    const result = await executeApi(activeFile, ep, globalSubName, globalTopicName, globalTopicCreateName);
+    results[key] = result;
+    checkAuthError(result);
+
+    const pct = Math.round(((i + 1) / eps.length) * 100);
+    progressBar.style.width = pct + '%';
+    renderApiList();
+    updateStats();
+  }
+
+  progressWrap.style.display = 'none';
+  progressBar.style.width = '0%';
+  btn.disabled = false;
+  btn.textContent = '▶ 전체 실행';
+
+  document.getElementById('statTime').textContent = ((Date.now() - startAll) / 1000).toFixed(1) + 's';
+}
+
+async function executeApi(fileIdx, ep, globalSubName = null, globalTopicName = null, globalTopicCreateName = null, overrideBody = null) {
+  const data   = swaggerData[fileIdx];
+  const spec   = data.spec;
+  const serverUrl = (spec && spec.servers && spec.servers[0])
+    ? spec.servers[0].url.replace(/\/$/, '')
+    : (spec && spec.host ? `${spec.schemes?.[0] || 'https'}://${spec.host}` : '');
+  const baseUrlInput = document.getElementById('baseUrl').value.trim();
+  const base   = baseUrlInput || serverUrl || '';
+
+  const key = itemKey(fileIdx, ep);
+
+  // Collect params from inputs if detail is showing this endpoint
+  let resolvedPath = ep.fullPath || ep.path;
+  const queryStr   = [];
+  const reqHeaders = getAuthHeaders();
+
+  // Auto-fill {domain}/{project} path params from auth panel
+  const autoDomainId  = document.getElementById('domainId').value.trim();
+  const autoProjectId = document.getElementById('projectId').value.trim();
+  if (autoDomainId)  DOMAIN_ALIASES.forEach(alias  => { resolvedPath = resolvedPath.replace(`{${alias}}`,  encodeURIComponent(autoDomainId)); });
+  if (autoProjectId) PROJECT_ALIASES.forEach(alias => { resolvedPath = resolvedPath.replace(`{${alias}}`, encodeURIComponent(autoProjectId)); });
+
+  // 전체 실행 모드: 선택된 subscription을 모든 SUB_ALIASES 패턴에 적용
+  if (globalSubName)   SUB_ALIASES.forEach(alias   => { resolvedPath = resolvedPath.replace(`{${alias}}`, encodeURIComponent(globalSubName)); });
+  if (globalTopicName) TOPIC_ALIASES.forEach(alias => { resolvedPath = resolvedPath.replace(`{${alias}}`, encodeURIComponent(globalTopicName)); });
+
+  ep.parameters.forEach(p => {
+    const el = document.getElementById(`param-${key}-${p.name}`);
+    // Skip if already auto-filled by domain/project
+    const isAutoFilled =
+      (DOMAIN_ALIASES.includes(p.name)  && autoDomainId)  ||
+      (PROJECT_ALIASES.includes(p.name) && autoProjectId);
+    const val = el ? el.value.trim() : '';
+    if (!val && !isAutoFilled) return;
+    if (!val) return; // auto-filled ones are already in resolvedPath
+    const pKey = resolvedParamKey(p.name);
+    if (p.in === 'path')   resolvedPath = resolvedPath.replace(`{${p.name}}`, encodeURIComponent(val));
+    if (p.in === 'query')  queryStr.push(`${encodeURIComponent(pKey)}=${encodeURIComponent(val)}`);
+    if (p.in === 'header') reqHeaders[pKey] = val;
+  });
+
+  let url = base + resolvedPath;
+  if (queryStr.length) url += '?' + queryStr.join('&');
+
+  let bodyStr = null;
+  if (['POST','PUT','PATCH'].includes(ep.method)) {
+    if (overrideBody !== null) {
+      bodyStr = overrideBody;
+    } else {
+      const bodyEl = document.getElementById(`body-${key}`);
+      if (bodyEl) bodyStr = bodyEl.value.trim() || null;
+    }
+  }
+
+  // {{varName}} 템플릿 변수 치환
+  if (bodyStr) bodyStr = applyTemplateVars(bodyStr);
+
+  // 전체/시나리오 실행 시 토픽 생성 API에 이름 주입
+  if (globalTopicCreateName && isTopicCreateApi(ep)) {
+    // v1: path에 {topic.name} 치환
+    resolvedPath = resolvedPath.replace('{topic.name}', encodeURIComponent(globalTopicCreateName));
+    // v2: body JSON의 name 필드에 주입
+    try {
+      const bodyObj = JSON.parse(bodyStr || '{}');
+      if (!bodyObj.name) bodyObj.name = globalTopicCreateName;
+      bodyStr = JSON.stringify(bodyObj, null, 2);
+    } catch { /* body가 JSON이 아닐 경우 무시 */ }
+  }
+
+  // localhost 환경이면 /proxy 를 통해 CORS 우회
+  const useProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const proxyUrl = `${location.origin}/proxy`;
+
+  const start = Date.now();
+  try {
+    let res, body, time;
+
+    if (useProxy) {
+      const proxyPayload = JSON.stringify({
+        url,
+        method:  ep.method,
+        headers: reqHeaders,
+        body:    bodyStr || undefined,
+      });
+      const proxyRes = await fetch(proxyUrl, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    proxyPayload,
+      });
+      time = Date.now() - start;
+      const proxyData = await proxyRes.json();
+
+      if (proxyData.error) throw new Error(proxyData.error);
+
+      return {
+        ok:             proxyData.status >= 200 && proxyData.status < 300,
+        status:         proxyData.status,
+        time,
+        body:           proxyData.body,
+        url,
+        requestHeaders: reqHeaders,
+        requestBody:    bodyStr,
+        viaProxy:       true,
+      };
+    }
+
+    // 직접 요청 (프록시 미사용 환경)
+    const fetchOpts = { method: ep.method, headers: reqHeaders };
+    if (bodyStr) fetchOpts.body = bodyStr;
+    res  = await fetch(url, fetchOpts);
+    time = Date.now() - start;
+    try { body = await res.text(); } catch { body = '(응답 없음)'; }
+
+    return {
+      ok:             res.status >= 200 && res.status < 300,
+      status:         res.status,
+      time,
+      body,
+      url,
+      requestHeaders: reqHeaders,
+      requestBody:    bodyStr,
+    };
+  } catch (e) {
+    const isProxy = useProxy;
+    return {
+      ok:    false,
+      status: null,
+      time:   Date.now() - start,
+      error:  isProxy
+        ? `프록시 서버 오류: ${e.message}\nserver.py 가 실행 중인지 확인하세요.`
+        : e.message.includes('Failed to fetch') || e.message.includes('NetworkError')
+          ? `CORS 또는 네트워크 오류: ${e.message}` : e.message,
+      url,
+      requestHeaders: reqHeaders,
+      requestBody:    bodyStr,
+    };
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   STATS
+══════════════════════════════════════════════════════════════════════ */
+function updateStats() {
+  const all     = Object.values(results).filter(r => !r.loading);
+  const success = all.filter(r => r.ok).length;
+  const fail    = all.filter(r => !r.ok).length;
+  document.getElementById('statTotal').textContent   = all.length;
+  document.getElementById('statSuccess').textContent = success;
+  document.getElementById('statFail').textContent    = fail;
+  const assertFails = all.filter(r => r.assertResults?.some(a => !a.pass)).length;
+  const assertEl = document.getElementById('statAssertFail');
+  if (assertEl) assertEl.textContent = assertFails;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════
+   HARNESS REPORT
+══════════════════════════════════════════════════════════════════════ */
+function renderHarnessReport(report) {
+  let el = document.getElementById('harnessReport');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'harnessReport';
+    el.style.cssText = 'background:#f0f7ff;border-top:2px solid #93c5fd;padding:12px 20px;font-size:12px;max-height:260px;overflow-y:auto;flex-shrink:0';
+    document.querySelector('.summary-bar').insertAdjacentElement('beforebegin', el);
+  }
+
+  const { scenarioName, totalTime, steps, summary, context } = report;
+  const passRate = summary.total > 0 ? Math.round((summary.pass / summary.total) * 100) : 0;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <strong style="color:var(--text)">🧪 Harness Report</strong>
+      <span style="color:var(--text-muted)">${scenarioName}</span>
+      <span style="margin-left:auto;color:var(--text-muted)">총 ${totalTime}ms</span>
+      <span style="color:${passRate===100?'var(--success)':'var(--danger)'}">
+        ${summary.pass}/${summary.total} Pass (${passRate}%)
+      </span>
+      <button class="btn-ghost btn-sm" onclick="copyHarnessReport()" title="JSON 복사">📋 복사</button>
+      <button class="btn-ghost btn-sm" onclick="document.getElementById('harnessReport').remove()">✕</button>
+    </div>
+    <div class="harness-timeline">
+      ${steps.map((step, i) => `
+        <div class="harness-step ${step.pass ? 'pass' : 'fail'}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-weight:600;color:var(--text)">${step.pass?'✅':'❌'} Step ${i+1}</span>
+            <span class="method-badge method-${step.method}" style="font-size:10px">${step.method}</span>
+            <code style="font-size:11px;color:var(--text-muted)">${step.path.split('/').slice(-2).join('/')}</code>
+            <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">${step.status||'ERR'} · ${step.time}ms</span>
+          </div>
+          ${step.assertResults.map(a =>
+            `<span style="font-size:11px;color:${a.pass?'var(--success)':'var(--danger)'};margin-right:8px">
+              ${a.pass?'✓':'✗'} ${a.type}${a.path?' .'+a.path:''}
+            </span>`
+          ).join('')}
+        </div>
+      `).join('')}
+    </div>
+    ${Object.keys(context).length > 0 ? `
+      <div style="margin-top:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+        <strong style="color:var(--text-muted);font-size:11px">Context 추출값</strong>
+        ${Object.entries(context).map(([k,v]) =>
+          `<span style="margin-left:8px;color:var(--primary)">${k}: <code>${v}</code></span>`
+        ).join('')}
+      </div>
+    ` : ''}
+  `;
+  window._lastHarnessReport = report;
+}
+
+function copyHarnessReport() {
+  if (!window._lastHarnessReport) return;
+  navigator.clipboard.writeText(JSON.stringify(window._lastHarnessReport, null, 2))
+    .then(() => showToast('✅ Harness Report가 클립보드에 복사되었습니다.', 'success'))
+    .catch(() => showToast('복사 실패', 'error'));
+}
+
+function showToast(msg, type = 'info') {
+  const colors = { info: 'var(--primary)', success: 'var(--success)', error: 'var(--danger)' };
+  const toast  = document.createElement('div');
+  toast.style.cssText = `
+    position:fixed;bottom:60px;right:20px;
+    background:var(--surface);border:1px solid ${colors[type]};
+    border-left:4px solid ${colors[type]};
+    border-radius:var(--radius);padding:10px 16px;
+    font-size:13px;color:var(--text);
+    box-shadow:var(--shadow-md);z-index:1000;
+    animation:slideIn .2s ease;
+  `;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ENVIRONMENT
+══════════════════════════════════════════════════════════════════════ */
+function initEnvSelect() {
+  const sel = document.getElementById('envSelect');
+  if (!sel) return;
+  sel.innerHTML = ENVIRONMENTS.map((e, i) =>
+    `<option value="${i}">${e.label}</option>`
+  ).join('');
+  const saved = localStorage.getItem('sc_env');
+  if (saved !== null) {
+    sel.value  = saved;
+    activeEnv  = ENVIRONMENTS[parseInt(saved)] || ENVIRONMENTS[0];
+    if (activeEnv.baseUrl) document.getElementById('baseUrl').value = activeEnv.baseUrl;
+  }
+  updateTokenBtnTooltip();
+}
+
+function onEnvChange(idx) {
+  activeEnv = ENVIRONMENTS[parseInt(idx)] || ENVIRONMENTS[0];
+  localStorage.setItem('sc_env', idx);
+  const baseInput = document.getElementById('baseUrl');
+  if (activeEnv.baseUrl) baseInput.value = activeEnv.baseUrl;
+  updateTokenBtnTooltip();
+}
+
+function updateTokenBtnTooltip() {
+  const btn = document.getElementById('tokenFetchBtn');
+  if (!btn) return;
+  const url = getIamTokenUrl();
+  btn.title = `⏰ 12시간마다 자동 갱신\n${url}\nCredential-ID / Credential-Secret 으로 IAM 토큰 자동 발급 후\n11시간 30분마다 자동으로 재발급됩니다`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   JSON TREE VIEWER
+══════════════════════════════════════════════════════════════════════ */
+function formatJsonTree(jsonStr, depth = 0) {
+  if (!jsonStr) return '(응답 없음)';
+  let parsed;
+  try { parsed = JSON.parse(jsonStr); } catch { return escHtml(jsonStr); }
+  return renderJsonNode(parsed, 0);
+}
+
+function renderJsonNode(val, depth) {
+  const indent = '  '.repeat(depth);
+  if (val === null)            return '<span style="color:var(--danger)">null</span>';
+  if (typeof val === 'boolean') return `<span style="color:var(--primary)">${val}</span>`;
+  if (typeof val === 'number')  return `<span style="color:#d97706">${val}</span>`;
+  if (typeof val === 'string')  return `<span style="color:var(--success)">"${escHtml(val)}"</span>`;
+  if (Array.isArray(val)) {
+    if (val.length === 0) return '[]';
+    const items = val.map((v, i) =>
+      `${indent}  <span style="color:var(--text-muted)">[${i}]</span> ${renderJsonNode(v, depth+1)}`
+    ).join(',\n');
+    return `[\n${items}\n${indent}]`;
+  }
+  if (typeof val === 'object') {
+    const keys = Object.keys(val);
+    if (keys.length === 0) return '{}';
+    if (depth >= 3) return `<span style="color:var(--text-muted)">{${keys.length} keys}</span>`;
+    const items = keys.map(k =>
+      `${indent}  <span style="color:var(--primary)">"${escHtml(k)}"</span>: ${renderJsonNode(val[k], depth+1)}`
+    ).join(',\n');
+    return `{\n${items}\n${indent}}`;
+  }
+  return escHtml(String(val));
+}
+
+function formatJson(str) {
+  if (!str) return '(응답 없음)';
+  try {
+    return escHtml(JSON.stringify(JSON.parse(str), null, 2));
+  } catch {
+    return escHtml(str);
+  }
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function getBodySchema(ep, spec) {
+  if (!spec) return null;
+  // OpenAPI 3.x
+  if (ep.requestBody) {
+    const content = ep.requestBody.content || {};
+    const mt = content['application/json'] || Object.values(content)[0];
+    return mt ? resolveRef(mt.schema, spec) : null;
+  }
+  // Swagger 2.x body param
+  const body = ep.parameters.find(p => p.in === 'body');
+  return body ? resolveRef(body.schema, spec) : null;
+}
+
+function resolveRef(schema, spec) {
+  if (!schema) return null;
+  if (schema.$ref) {
+    const parts = schema.$ref.replace('#/', '').split('/');
+    let obj = spec;
+    for (const p of parts) obj = obj?.[p];
+    return obj || null;
+  }
+  return schema;
+}
+
+function buildExample(schema) {
+  if (!schema) return {};
+  if (schema.example !== undefined) return schema.example;
+  if (schema.type === 'object' || schema.properties) {
+    const out = {};
+    for (const [k, v] of Object.entries(schema.properties || {})) {
+      out[k] = buildExample(v);
+    }
+    return out;
+  }
+  if (schema.type === 'array') return [buildExample(schema.items)];
+  if (schema.type === 'string')  return schema.example ?? 'string';
+  if (schema.type === 'integer' || schema.type === 'number') return schema.example ?? 0;
+  if (schema.type === 'boolean') return false;
+  return null;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEMPLATE VARIABLES  — body의 {{varName}} 을 저장된 값으로 치환
+══════════════════════════════════════════════════════════════════════ */
+const VARS_STORAGE_KEY = 'sc_template_vars';
+let _templateVars = {};  // { key: value }
+
+function loadVarsFromStorage() {
+  try {
+    const raw = localStorage.getItem(VARS_STORAGE_KEY);
+    _templateVars = raw ? JSON.parse(raw) : {};
+  } catch { _templateVars = {}; }
+}
+
+function saveVars() {
+  // tbody의 현재 입력값으로 _templateVars 갱신
+  _templateVars = {};
+  document.querySelectorAll('#varsList > div').forEach(row => {
+    const k = row.querySelector('.var-key')?.value.trim();
+    const v = row.querySelector('.var-val')?.value;
+    if (k) _templateVars[k] = v ?? '';
+  });
+  localStorage.setItem(VARS_STORAGE_KEY, JSON.stringify(_templateVars));
+  const notice = document.getElementById('varsSavedNotice');
+  if (notice) { notice.style.opacity = '1'; setTimeout(() => notice.style.opacity = '0', 1500); }
+}
+
+function applyTemplateVars(bodyStr) {
+  if (!bodyStr || Object.keys(_templateVars).length === 0) return bodyStr;
+  return bodyStr.replace(/\{\{(\w+)\}\}/g, (_, key) =>
+    Object.prototype.hasOwnProperty.call(_templateVars, key) ? _templateVars[key] : `{{${key}}}`
+  );
+}
+
+function addVarRow(key = '', val = '') {
+  const list = document.getElementById('varsList');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;align-items:center';
+  row.innerHTML = `
+    <input class="var-key" type="text" value="${escHtml(key)}" placeholder="{{varName}}"
+      style="width:140px;flex-shrink:0;border:1px solid var(--border);border-radius:var(--radius);
+             padding:4px 7px;font-size:12px;background:var(--surface2);color:var(--primary);
+             font-family:'Fira Code',monospace;outline:none"
+      onblur="saveVars()" />
+    <span style="color:var(--text-muted);font-size:12px;flex-shrink:0">=</span>
+    <input class="var-val" type="text" value="${escHtml(val)}" placeholder="값"
+      style="flex:1;border:1px solid var(--border);border-radius:var(--radius);
+             padding:4px 7px;font-size:12px;background:var(--surface2);color:var(--text);outline:none"
+      onblur="saveVars()" />
+    <button onclick="this.closest('div').remove();saveVars()"
+      style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:13px;
+             line-height:1;padding:2px 4px;flex-shrink:0"
+      title="삭제">✕</button>`;
+  list.appendChild(row);
+  // 추가 시 스크롤 맨 아래로
+  list.scrollTop = list.scrollHeight;
+  // 새 행이면 key input에 포커스
+  if (!key) row.querySelector('.var-key').focus();
+}
+
+function renderVarsTable() {
+  document.getElementById('varsList').innerHTML = '';
+  Object.entries(_templateVars).forEach(([k, v]) => addVarRow(k, v));
+}
+
+function openVarsModal() {
+  document.getElementById('varsModalOverlay').classList.add('show');
+}
+function closeVarsModal() {
+  saveVars();
+  document.getElementById('varsModalOverlay').classList.remove('show');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   IAM TOKEN AUTO-REFRESH
+   엔드포인트: ENVIRONMENTS[n].iamUrl (환경별 자동 선택)
+   응답 헤더:  X-Subject-Token → X-Auth-Token 으로 사용
+   유효시간:   12시간 → 11.5시간(41400초)마다 자동 갱신
+══════════════════════════════════════════════════════════════════════ */
+function getIamTokenUrl() {
+  return activeEnv?.iamUrl || 'https://iam.kakaocloud.com/identity/v3/auth/tokens';
+}
+const TOKEN_REFRESH_MS   = 11.5 * 60 * 60 * 1000; // 11시간 30분
+let _tokenRefreshTimer   = null;
+let _tokenLastRefreshed  = null;
+let _tokenCountdownTimer = null;
+
+async function fetchAuthToken() {
+  const credId     = document.getElementById('credId').value.trim();
+  const credSecret = document.getElementById('credSecret').value.trim();
+  if (!credId || !credSecret) {
+    showToast('Credential-ID 와 Credential-Secret 을 먼저 입력하세요.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('tokenFetchBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 발급 중...'; }
+
+  const iamBody = JSON.stringify({
+    auth: {
+      identity: {
+        methods: ['application_credential'],
+        application_credential: { id: credId, secret: credSecret }
+      }
+    }
+  });
+
+  try {
+    let token = null;
+    const useProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+    const iamUrl = getIamTokenUrl();
+    if (useProxy) {
+      const r = await fetch('/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: iamUrl, method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: iamBody
+        })
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      token = d.headers?.['X-Subject-Token'] || d.headers?.['x-subject-token'];
+      if (!token) throw new Error(`HTTP ${d.status} — ${d.body ? d.body.slice(0, 800) : '응답 없음'}`);
+    } else {
+      const r = await fetch(iamUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: iamBody
+      });
+      token = r.headers.get('X-Subject-Token');
+      if (!token) throw new Error(`토큰이 응답 헤더에 없습니다 (HTTP ${r.status}). Credential 값을 확인하세요.`);
+    }
+
+    document.getElementById('authToken').value = token;
+    localStorage.setItem(STORAGE_KEYS.authToken, btoa(unescape(encodeURIComponent(token))));
+    updateSavedNotice();
+
+    _tokenLastRefreshed = new Date();
+    localStorage.setItem('sc_token_refreshed', _tokenLastRefreshed.toISOString());
+    startTokenAutoRefresh();
+    showToast('✅ X-Auth-Token 발급 완료 — 11시간 30분 후 자동 갱신', 'success');
+
+  } catch(e) {
+    showToast('❌ 토큰 발급 실패: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔑 발급'; }
+  }
+}
+
+function startTokenAutoRefresh() {
+  stopTokenAutoRefresh();
+  _tokenRefreshTimer = setInterval(async () => {
+    await fetchAuthToken();
+  }, TOKEN_REFRESH_MS);
+  startTokenCountdown();
+}
+
+function stopTokenAutoRefresh() {
+  if (_tokenRefreshTimer)   { clearInterval(_tokenRefreshTimer);   _tokenRefreshTimer   = null; }
+  if (_tokenCountdownTimer) { clearInterval(_tokenCountdownTimer); _tokenCountdownTimer = null; }
+}
+
+function startTokenCountdown() {
+  if (_tokenCountdownTimer) clearInterval(_tokenCountdownTimer);
+  updateTokenRefreshStatus();
+  // 매 분 카운트다운 갱신
+  _tokenCountdownTimer = setInterval(updateTokenRefreshStatus, 60 * 1000);
+}
+
+function updateTokenRefreshStatus() {
+  const el = document.getElementById('tokenRefreshStatus');
+  if (!el) return;
+  if (!_tokenLastRefreshed) {
+    el.textContent = '';
+    return;
+  }
+  const nextAt  = new Date(_tokenLastRefreshed.getTime() + TOKEN_REFRESH_MS);
+  const diffMs  = nextAt - Date.now();
+  const diffMin = Math.max(0, Math.round(diffMs / 60000));
+  const hh = String(Math.floor(diffMin / 60)).padStart(2, '0');
+  const mm = String(diffMin % 60).padStart(2, '0');
+  const lastStr = _tokenLastRefreshed.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  const nextStr = nextAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  el.innerHTML  = diffMin > 0
+    ? `🔄 인증 토큰 마지막 갱신: ${lastStr} &nbsp;·&nbsp; 다음 자동갱신: ${nextStr} (${hh}:${mm} 후)`
+    : `⚠️ 토큰 만료 임박 — 🔑 발급 버튼을 눌러 갱신하세요`;
+}
+
+/* ── Page unload warning ───────────────────────────────────────────── */
+window.addEventListener('beforeunload', e => {
+  const hasCreds = SECURE_FIELDS.some(id => document.getElementById(id).value);
+  if (hasCreds) {
+    e.preventDefault();
+    e.returnValue = '인증 정보가 입력되어 있습니다. 떠나기 전에 저장 또는 초기화하세요.';
+  }
+});
+
+/* ── Resize Handle ─────────────────────────────────────────────────── */
+(function () {
+  const handle    = document.getElementById('resizeHandle');
+  const leftPanel = document.querySelector('.left-panel');
+  let dragging = false;
+  let startX   = 0;
+  let startW   = 0;
+
+  handle.addEventListener('mousedown', e => {
+    dragging = true;
+    startX   = e.clientX;
+    startW   = leftPanel.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.cursor    = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta  = e.clientX - startX;
+    const mainW  = handle.parentElement.offsetWidth || window.innerWidth;
+    const newW   = Math.min(Math.max(startW + delta, 220), mainW * 0.75);
+    leftPanel.style.width = newW + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+
+/* ── Init ─────────────────────────────────────────────────────────── */
+loadAuth();
+initEnvSelect();
+loadVarsFromStorage();
+renderVarsTable();
+loadAllSwagger().then(() => renderScenarioSelect());
+
+// 이전 토큰 갱신 시각 복원 → 남은 시간만큼 타이머 재설정
+(function restoreTokenRefresh() {
+  const saved = localStorage.getItem('sc_token_refreshed');
+  if (!saved) { updateTokenRefreshStatus(); return; }
+  _tokenLastRefreshed = new Date(saved);
+  const elapsed   = Date.now() - _tokenLastRefreshed.getTime();
+  const remaining = TOKEN_REFRESH_MS - elapsed;
+  if (remaining > 0) {
+    // 남은 시간 후 한 번 실행 후 정기 인터벌 시작
+    _tokenRefreshTimer = setTimeout(async () => {
+      await fetchAuthToken();
+    }, remaining);
+    startTokenCountdown();
+  } else {
+    updateTokenRefreshStatus(); // 만료 임박 표시
+  }
+})();
+</script>
+<!-- Token Expired Toast -->
+<div class="token-toast" id="tokenToast">
+  <div class="token-toast-icon">🔐</div>
+  <div class="token-toast-body">
+    <div class="token-toast-title">인증 토큰 만료 가능성</div>
+    <div class="token-toast-msg" id="tokenToastMsg">
+      X-Auth-Token이 만료되었을 수 있습니다.<br>
+      Auth Panel에서 토큰을 재입력 후 저장해 주세요.
+    </div>
+  </div>
+  <button class="token-toast-close" onclick="hideTokenToast()">✕</button>
+</div>
+</body>
+</html>

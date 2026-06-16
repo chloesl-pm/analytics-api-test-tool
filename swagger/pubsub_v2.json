@@ -1,0 +1,1354 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Pub/Sub API",
+    "version": "2.0"
+  },
+  "tags": [
+    {
+      "name": "Publisher"
+    },
+    {
+      "name": "Subscriber"
+    }
+  ],
+  "host": "pub-sub.kr-central-2.kakaocloud-stg.com",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v2/subscriptions": {
+      "get": {
+        "operationId": "Subscriber_ListSubscriptions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2ListSubscriptionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      },
+      "delete": {
+        "operationId": "Subscriber_DeleteSubscriptions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v2DeleteSubscriptionsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      },
+      "put": {
+        "operationId": "Subscriber_CreateSubscription",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Subscription"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v2CreateSubscriptionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription.id}": {
+      "patch": {
+        "operationId": "Subscriber_UpdateSubscription",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Subscription"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription.id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SubscriberUpdateSubscriptionBody"
+            }
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription}": {
+      "get": {
+        "operationId": "Subscriber_GetSubscription",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Subscription"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      },
+      "delete": {
+        "operationId": "Subscriber_DeleteSubscription",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Subscription"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription}/acknowledge": {
+      "post": {
+        "operationId": "Subscriber_Acknowledge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2AcknowledgeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SubscriberAcknowledgeBody"
+            }
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription}/export/start": {
+      "post": {
+        "operationId": "Subscriber_StartExportSubscription",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription}/export/stop": {
+      "post": {
+        "operationId": "Subscriber_StopExportSubscription",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription}/modifyAckDeadline": {
+      "post": {
+        "operationId": "Subscriber_ModifyAckDeadline",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2ModifyAckDeadlineResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SubscriberModifyAckDeadlineBody"
+            }
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription}/pull": {
+      "post": {
+        "operationId": "Subscriber_Pull",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2PullResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SubscriberPullBody"
+            }
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/subscriptions/{subscription}/seek": {
+      "post": {
+        "operationId": "Subscriber_Seek",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Subscription"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscription",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SubscriberSeekBody"
+            }
+          }
+        ],
+        "tags": [
+          "Subscriber"
+        ]
+      }
+    },
+    "/v2/topics": {
+      "get": {
+        "operationId": "Publisher_ListTopics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2ListTopicsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      },
+      "delete": {
+        "operationId": "Publisher_DeleteTopics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v2DeleteTopicsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      },
+      "put": {
+        "operationId": "Publisher_CreateTopic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Topic"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v2CreateTopicRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      }
+    },
+    "/v2/topics/{topic.id}": {
+      "patch": {
+        "operationId": "Publisher_UpdateTopic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Topic"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "topic.id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PublisherUpdateTopicBody"
+            }
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      }
+    },
+    "/v2/topics/{topic}": {
+      "get": {
+        "operationId": "Publisher_GetTopic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Topic"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      },
+      "delete": {
+        "operationId": "Publisher_DeleteTopic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2Topic"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      }
+    },
+    "/v2/topics/{topic}/publish": {
+      "post": {
+        "operationId": "Publisher_Publish",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2PublishResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PublisherPublishBody"
+            }
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      }
+    },
+    "/v2/topics/{topic}/subscriptions": {
+      "get": {
+        "operationId": "Publisher_ListTopicSubscriptions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v2ListTopicSubscriptionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Publisher"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "PublisherPublishBody": {
+      "type": "object",
+      "properties": {
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v2PublishMessage"
+          }
+        }
+      }
+    },
+    "PublisherUpdateTopicBody": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "type": "string",
+              "readOnly": true
+            },
+            "project": {
+              "type": "string",
+              "readOnly": true
+            },
+            "name": {
+              "type": "string",
+              "readOnly": true
+            },
+            "messageRetentionDuration": {
+              "type": "string",
+              "title": "7 * 24 * time.Hour"
+            },
+            "subscriptionCount": {
+              "type": "string",
+              "format": "int64",
+              "readOnly": true
+            },
+            "description": {
+              "type": "string"
+            },
+            "creator": {
+              "type": "string",
+              "readOnly": true
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "readOnly": true
+            }
+          }
+        },
+        "updateMask": {
+          "type": "string"
+        }
+      }
+    },
+    "SubscriberAcknowledgeBody": {
+      "type": "object",
+      "properties": {
+        "ackIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SubscriberModifyAckDeadlineBody": {
+      "type": "object",
+      "properties": {
+        "ackIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ackAction": {
+          "type": "string"
+        }
+      }
+    },
+    "SubscriberPullBody": {
+      "type": "object",
+      "properties": {
+        "maxMessages": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "waitTime": {
+          "type": "string"
+        }
+      }
+    },
+    "SubscriberSeekBody": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "SubscriberUpdateSubscriptionBody": {
+      "type": "object",
+      "properties": {
+        "subscription": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "readOnly": true
+            },
+            "domain": {
+              "type": "string",
+              "readOnly": true
+            },
+            "project": {
+              "type": "string",
+              "readOnly": true
+            },
+            "topicId": {
+              "type": "string",
+              "readOnly": true
+            },
+            "ackDeadlineSeconds": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "messageRetentionDuration": {
+              "type": "string"
+            },
+            "maxDeliveryAttempt": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "status": {
+              "type": "string",
+              "readOnly": true
+            },
+            "pushConfig": {
+              "$ref": "#/definitions/v2PushConfig"
+            },
+            "unprocessedMessageCount": {
+              "type": "string",
+              "format": "uint64",
+              "readOnly": true
+            },
+            "creator": {
+              "type": "string",
+              "readOnly": true
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "readOnly": true
+            },
+            "objectStorageConfig": {
+              "$ref": "#/definitions/v2ObjectStorageConfig"
+            },
+            "subscriptionType": {
+              "$ref": "#/definitions/v2SubscriptionType",
+              "readOnly": true
+            },
+            "filter": {
+              "type": "string",
+              "readOnly": true
+            }
+          }
+        },
+        "updateMask": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v2AckID": {
+      "type": "object",
+      "properties": {
+        "ackId": {
+          "type": "string"
+        },
+        "reissuedAckId": {
+          "type": "string"
+        }
+      }
+    },
+    "v2AcknowledgeResponse": {
+      "type": "object",
+      "properties": {
+        "failure": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v2FailedAckID"
+          }
+        }
+      }
+    },
+    "v2CreateSubscriptionRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "topicId": {
+          "type": "string"
+        },
+        "ackDeadlineSeconds": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "messageRetentionDuration": {
+          "type": "string"
+        },
+        "maxDeliveryAttempt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pushConfig": {
+          "$ref": "#/definitions/v2PushConfig"
+        },
+        "objectStorageConfig": {
+          "$ref": "#/definitions/v2ObjectStorageConfig"
+        },
+        "filter": {
+          "type": "string"
+        }
+      }
+    },
+    "v2CreateTopicRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "messageRetentionDuration": {
+          "type": "string",
+          "title": "7 * 24 * time.Hour"
+        },
+        "description": {
+          "type": "string"
+        },
+        "createDefaultSubscription": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v2DeleteSubscriptionsRequest": {
+      "type": "object",
+      "properties": {
+        "subscriptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v2DeleteTopicsRequest": {
+      "type": "object",
+      "properties": {
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v2Error": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "v2FailedAckID": {
+      "type": "object",
+      "properties": {
+        "ackId": {
+          "type": "string"
+        },
+        "error": {
+          "$ref": "#/definitions/v2Error"
+        }
+      }
+    },
+    "v2ListSubscriptionsResponse": {
+      "type": "object",
+      "properties": {
+        "subscriptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v2Subscription"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v2ListTopicSubscriptionsResponse": {
+      "type": "object",
+      "properties": {
+        "subscriptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v2ListTopicsResponse": {
+      "type": "object",
+      "properties": {
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v2Topic"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v2ModifyAckDeadlineResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v2AckID"
+          }
+        },
+        "failure": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v2FailedAckID"
+          }
+        }
+      }
+    },
+    "v2ObjectStorageConfig": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "string"
+        },
+        "exportIntervalMinutes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "filePrefix": {
+          "type": "string"
+        },
+        "fileSuffix": {
+          "type": "string"
+        },
+        "channelCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "maxChannelCount": {
+          "type": "integer",
+          "format": "int32",
+          "readOnly": true
+        },
+        "isExportEnabled": {
+          "type": "boolean",
+          "readOnly": true
+        }
+      }
+    },
+    "v2PublishMessage": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v2PublishResponse": {
+      "type": "object",
+      "properties": {
+        "messageIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v2PubsubMessage": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "messageId": {
+          "type": "string"
+        },
+        "publishTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v2PullResponse": {
+      "type": "object",
+      "properties": {
+        "receivedMessages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v2ReceivedMessage"
+          }
+        }
+      }
+    },
+    "v2PushConfig": {
+      "type": "object",
+      "properties": {
+        "pushEndpoint": {
+          "type": "string"
+        },
+        "pushBatchSize": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "unwrapPayload": {
+          "type": "boolean"
+        },
+        "writeMetadata": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v2ReceivedMessage": {
+      "type": "object",
+      "properties": {
+        "ackId": {
+          "type": "string"
+        },
+        "message": {
+          "$ref": "#/definitions/v2PubsubMessage"
+        },
+        "deliveryAttempt": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v2Subscription": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "readOnly": true
+        },
+        "domain": {
+          "type": "string",
+          "readOnly": true
+        },
+        "project": {
+          "type": "string",
+          "readOnly": true
+        },
+        "topicId": {
+          "type": "string",
+          "readOnly": true
+        },
+        "ackDeadlineSeconds": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "messageRetentionDuration": {
+          "type": "string"
+        },
+        "maxDeliveryAttempt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "status": {
+          "type": "string",
+          "readOnly": true
+        },
+        "pushConfig": {
+          "$ref": "#/definitions/v2PushConfig"
+        },
+        "unprocessedMessageCount": {
+          "type": "string",
+          "format": "uint64",
+          "readOnly": true
+        },
+        "creator": {
+          "type": "string",
+          "readOnly": true
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "objectStorageConfig": {
+          "$ref": "#/definitions/v2ObjectStorageConfig"
+        },
+        "subscriptionType": {
+          "$ref": "#/definitions/v2SubscriptionType",
+          "readOnly": true
+        },
+        "filter": {
+          "type": "string",
+          "readOnly": true
+        }
+      }
+    },
+    "v2SubscriptionType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "PULL",
+        "PUSH",
+        "OBJECT_STORAGE"
+      ],
+      "default": "UNKNOWN"
+    },
+    "v2Topic": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string",
+          "readOnly": true
+        },
+        "project": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "readOnly": true
+        },
+        "messageRetentionDuration": {
+          "type": "string",
+          "title": "7 * 24 * time.Hour"
+        },
+        "subscriptionCount": {
+          "type": "string",
+          "format": "int64",
+          "readOnly": true
+        },
+        "description": {
+          "type": "string"
+        },
+        "creator": {
+          "type": "string",
+          "readOnly": true
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "Access-Token": {
+      "type": "apiKey",
+      "name": "Access-Token",
+      "in": "header"
+    },
+    "Console-Request": {
+      "type": "apiKey",
+      "description": "required: cHVic3Vi",
+      "name": "Console-Request",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "Access-Token": [],
+      "Console-Request": []
+    }
+  ]
+}
