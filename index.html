@@ -12,6 +12,11 @@
       --bg: #f4f6f9;
       --surface: #ffffff;
       --surface2: #f8fafc;
+      --surface3: #f0f4ff;   /* 연한 파란빛 — 서비스/환경 Row */
+      --panel-bg: #f8fafc;   /* 좌측 패널 배경 */
+      --header-bg: #1e293b;  /* 헤더 다크 배경 */
+      --header-text: #f1f5f9;
+      --detail-bg: #fafbfc;  /* 우측 디테일 패널 */
       --border: #e2e8f0;
       --text: #1e293b;
       --text-muted: #64748b;
@@ -31,6 +36,23 @@
       --patch: #7c3aed;
       --patch-bg: #ede9fe;
       --radius: 8px;
+      --info-bg:      #eff6ff;
+      --info-border:  #93c5fd;
+      --tooltip-bg:   #333;
+      --number-color: #d97706;
+      --code-bg:      #1e293b;
+      --code-text:    #e2e8f0;
+      --radius-sm:  4px;
+      --radius-md:  8px;
+      --radius-lg: 12px;
+      --space-1:    4px;
+      --space-2:    8px;
+      --space-3:   12px;
+      --space-4:   16px;
+      --space-5:   20px;
+      --z-dropdown:  100;
+      --z-modal:     200;
+      --z-toast:     300;
       --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
       --shadow-md: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -1px rgba(0,0,0,.04);
     }
@@ -48,8 +70,8 @@
 
     /* ─── Header ─────────────────────────────────────────────────── */
     .app-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--header-bg);
       padding: 0 20px;
       display: flex;
       align-items: center;
@@ -58,8 +80,8 @@
       flex-shrink: 0;
       box-shadow: var(--shadow);
     }
-    .app-header h1 { font-size: 16px; font-weight: 700; color: var(--primary); }
-    .app-header .subtitle { font-size: 12px; color: var(--text-muted); }
+    .app-header h1 { font-size: 16px; font-weight: 700; color: var(--header-text); }
+    .app-header .subtitle { font-size: 12px; color: #94a3b8; }
     .header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 
     /* ─── Env Button Group ──────────────────────────────────────── */
@@ -72,14 +94,14 @@
       bottom: calc(100% + 6px);
       left: 50%;
       transform: translateX(-50%);
-      background: #333;
+      background: var(--tooltip-bg);
       color: #fff;
       font-size: 11px;
       white-space: nowrap;
       padding: 4px 8px;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       pointer-events: none;
-      z-index: 100;
+      z-index: var(--z-dropdown);
     }
     .env-opt-wrap[data-disabled="true"]:hover::before {
       content: '';
@@ -88,9 +110,9 @@
       left: 50%;
       transform: translateX(-50%);
       border: 4px solid transparent;
-      border-top-color: #333;
+      border-top-color: var(--tooltip-bg);
       pointer-events: none;
-      z-index: 100;
+      z-index: var(--z-dropdown);
     }
     .env-btn {
       height: 30px;
@@ -108,13 +130,12 @@
     }
     .env-btn:hover:not(:disabled) { background: var(--bg); border-color: var(--primary); }
     .env-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .env-btn:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
 
     /* ─── Auth Panel ─────────────────────────────────────────────── */
     .auth-panel {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 10px 20px;
+      padding: var(--space-2) var(--space-5);
       flex-shrink: 0;
     }
     .auth-panel-inner {
@@ -127,6 +148,12 @@
       gap: 10px;
       align-items: flex-end;
       flex-wrap: wrap;
+    }
+    .auth-row:first-child {
+      background: var(--surface3);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      margin: -2px -4px;
     }
     .auth-row + .auth-row {
       padding-top: 6px;
@@ -181,7 +208,7 @@
     .auth-actions { display: flex; gap: 8px; align-items: flex-end; }
     .saved-notice {
       font-size: 11px;
-      color: var(--success);
+      color: #4ade80;
       display: none;
       align-items: center;
       gap: 4px;
@@ -201,10 +228,16 @@
     }
     button:hover { opacity: .88; }
     button:active { opacity: .75; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+    button:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-success { background: var(--success); color: #fff; }
     .btn-danger  { background: var(--danger);  color: #fff; }
     .btn-ghost   { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg); border-color: var(--border); opacity: 1; }
     .btn-sm { padding: 4px 10px; font-size: 12px; }
 
     /* ─── Main layout ────────────────────────────────────────────── */
@@ -220,7 +253,7 @@
       width: 420px;
       min-width: 220px;
       max-width: 75vw;
-      background: var(--surface);
+      background: var(--panel-bg);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -254,6 +287,7 @@
     .left-top {
       padding: 12px;
       border-bottom: 1px solid var(--border);
+      background: var(--surface);
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -272,11 +306,24 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
+    .select-ctrl {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 10px;
+      height: 30px;
+      font-size: 13px;
+      background: var(--surface2);
+      color: var(--text);
+      outline: none;
+      box-sizing: border-box;
+    }
     #fileSelect, #scenarioSelect {
       flex: 1;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 6px 10px;
+      padding: 0 10px;
+      height: 30px;
+      box-sizing: border-box;
       font-size: 13px;
       font-weight: 500;
       background: var(--surface2);
@@ -330,10 +377,11 @@
       border-radius: var(--radius);
       margin-bottom: 6px;
       overflow: hidden;
-      transition: box-shadow .15s;
+      background: var(--surface);
+      transition: box-shadow .15s, background .15s;
       cursor: pointer;
     }
-    .api-item:hover { box-shadow: var(--shadow-md); }
+    .api-item:hover { box-shadow: var(--shadow-md); background: var(--surface3); }
     .api-item.selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
     .api-item-header {
       display: flex;
@@ -345,7 +393,7 @@
       font-size: 10px;
       font-weight: 700;
       padding: 2px 7px;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       text-transform: uppercase;
       letter-spacing: .04em;
       flex-shrink: 0;
@@ -395,7 +443,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: var(--surface2);
+      background: var(--detail-bg);
     }
     .right-panel-inner {
       flex: 1;
@@ -478,8 +526,8 @@
 
     /* ─── Code / JSON ────────────────────────────────────────────── */
     pre.code-block {
-      background: #1e293b;
-      color: #e2e8f0;
+      background: var(--code-bg);
+      color: var(--code-text);
       border-radius: var(--radius);
       padding: 14px;
       font-family: 'Fira Code', 'Consolas', monospace;
@@ -492,7 +540,7 @@
       overflow-y: auto;
     }
     pre.code-block::-webkit-scrollbar { height: 4px; width: 4px; }
-    pre.code-block::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    pre.code-block::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
 
     /* ─── Status Badge ────────────────────────────────────────────── */
     .status-badge {
@@ -535,12 +583,12 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: var(--z-modal);
     }
     .overlay.show { display: flex; }
     .dialog {
       background: var(--surface);
-      border-radius: 12px;
+      border-radius: var(--radius-lg);
       padding: 28px 32px;
       max-width: 380px;
       width: 90%;
@@ -600,7 +648,7 @@
       position: fixed;
       top: 20px;
       right: 20px;
-      z-index: 9999;
+      z-index: var(--z-toast);
       background: #fff;
       border: 1.5px solid var(--danger);
       border-left: 5px solid var(--danger);
@@ -884,10 +932,7 @@ const SWAGGER_FILES = [
     <div class="auth-row">
       <div class="auth-field">
         <label>Service</label>
-        <select id="serviceSelect" onchange="onServiceChange(this.value)"
-          style="border:1px solid var(--border);border-radius:var(--radius);
-                 padding:0 10px;font-size:13px;background:var(--surface2);
-                 color:var(--text);outline:none;height:30px;box-sizing:border-box">
+        <select id="serviceSelect" class="select-ctrl" onchange="onServiceChange(this.value)">
         </select>
       </div>
 
@@ -982,8 +1027,8 @@ const SWAGGER_FILES = [
 </div>
 
 <!-- Variables Modal -->
-<div class="overlay" id="varsModalOverlay" onclick="if(event.target===this)closeVarsModal()" style="z-index:1000">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;
+<div class="overlay" id="varsModalOverlay" onclick="if(event.target===this)closeVarsModal()" style="z-index:200">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;
               width:480px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.2);display:flex;flex-direction:column">
     <!-- 헤더 -->
     <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);gap:8px">
@@ -1021,12 +1066,12 @@ const SWAGGER_FILES = [
     <div class="left-top">
       <div class="file-select-wrap">
         <label>API 파일</label>
-        <select id="fileSelect" onchange="activeFile = parseInt(this.value); activeScenario = null; renderScenarioSelect(); renderApiList(); updateFileCountBadge()"></select>
+        <select id="fileSelect" class="select-ctrl" onchange="activeFile = parseInt(this.value); activeScenario = null; renderScenarioSelect(); renderApiList(); updateFileCountBadge()"></select>
         <span class="api-count-badge" id="apiCountBadge">0</span>
       </div>
       <div class="file-select-wrap" style="margin-top:2px">
         <label>시나리오</label>
-        <select id="scenarioSelect" onchange="onScenarioChange(this.value)">
+        <select id="scenarioSelect" class="select-ctrl" onchange="onScenarioChange(this.value)">
           <option value="">전체 API 실행</option>
         </select>
       </div>
