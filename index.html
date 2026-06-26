@@ -3621,7 +3621,7 @@ async function fetchAuthToken() {
     let token = null;
     const iamUrl = getIamTokenUrl();
 
-    const useProxyForIam = location.protocol !== 'file:';
+    const useProxyForIam = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     if (useProxyForIam) {
       const r = await fetch('/proxy', {
         method: 'POST',
