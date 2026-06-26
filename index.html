@@ -3619,32 +3619,18 @@ async function fetchAuthToken() {
 
   try {
     let token = null;
-    const useProxy = location.protocol !== 'file:';
-
     const iamUrl = getIamTokenUrl();
-    if (useProxy) {
-      const r = await fetch('/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: iamUrl, method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: iamBody
-        })
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error);
-      token = d.headers?.['X-Subject-Token'] || d.headers?.['x-subject-token'];
-      if (!token) throw new Error(`HTTP ${d.status} — ${d.body ? d.body.slice(0, 800) : '응답 없음'}`);
-    } else {
-      const r = await fetch(iamUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: iamBody
-      });
-      token = r.headers.get('X-Subject-Token');
-      if (!token) throw new Error(`토큰이 응답 헤더에 없습니다 (HTTP ${r.status}). Credential 값을 확인하세요.`);
-    }
+
+    // IAM 토큰 발급은 항상 브라우저에서 직접 요청
+    // (Stage IAM은 회사 VPN 환경에서 브라우저가 직접 접근, Prod/CBT IAM은 공개 접근)
+    // 프록시 서버(Render)를 경유하면 내부망 IAM에 도달 불가 → 타임아웃
+    const r = await fetch(iamUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: iamBody
+    });
+    token = r.headers.get('X-Subject-Token');
+    if (!token) throw new Error(`토큰이 응답 헤더에 없습니다 (HTTP ${r.status}). Credential 값을 확인하세요.`);
 
     document.getElementById('authToken').value = token;
     localStorage.setItem(STORAGE_KEYS.authToken + '_' + activeEnv.name, btoa(unescape(encodeURIComponent(token))));
