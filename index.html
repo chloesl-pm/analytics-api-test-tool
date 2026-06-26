@@ -3390,7 +3390,7 @@ function initEnvSelect() {
 function updateEnvBtnGroup() {
   const group = document.getElementById('envBtnGroup');
   if (!group) return;
-  group.innerHTML = ENVIRONMENTS.map((e, i) => {
+  let html = ENVIRONMENTS.map((e, i) => {
     const supported = activeService.supportedEnvs.includes(e.name);
     const isActive  = activeEnv.name === e.name;
     return `<span class="env-opt-wrap"
@@ -3401,7 +3401,38 @@ function updateEnvBtnGroup() {
               onclick="onEnvChange(${i})">${e.label}</button>
     </span>`;
   }).join('');
+  if (activeEnv.name === 'dev') {
+    html += `<button class="btn-ghost btn-sm" onclick="copyCbtToStage()"
+               title="CBT 인증값(Domain/Project/Cred/Token)을 Stage로 복사하고 CBT를 초기화합니다"
+               style="margin-left:6px;font-size:11px;color:var(--primary);border-color:var(--primary)">→ Stage 복사</button>`;
+  }
+  group.innerHTML = html;
   updateTokenBtnTooltip();
+}
+
+function copyCbtToStage() {
+  if (!confirm('CBT 인증값을 Stage로 복사하고, CBT 값을 초기화합니다.\n(Stage에 기존 값이 있으면 덮어씁니다)\n\n계속하시겠습니까?')) return;
+
+  // 현재 화면 입력값이 아직 저장 안 됐을 수 있으므로 먼저 저장
+  saveEnvAuth('dev');
+
+  // STORAGE_KEYS 5종: CBT(dev) → Stage 복사 후 CBT 초기화
+  for (const key of Object.values(STORAGE_KEYS)) {
+    const cbtVal = localStorage.getItem(key + '_dev');
+    if (cbtVal) localStorage.setItem(key + '_stage', cbtVal);
+    else        localStorage.removeItem(key + '_stage');
+    localStorage.removeItem(key + '_dev');
+  }
+
+  // Stage로 전환
+  const stageIdx = ENVIRONMENTS.findIndex(e => e.name === 'stage');
+  if (stageIdx >= 0) {
+    activeEnv = ENVIRONMENTS[stageIdx];
+    localStorage.setItem('sc_env', stageIdx);
+  }
+  loadEnvAuth('stage');
+  updateEnvBtnGroup();
+  showToast('✅ CBT 인증값을 Stage로 복사했습니다. CBT 값이 초기화되었습니다.', 'success');
 }
 
 function onEnvChange(idx) {
