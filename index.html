@@ -940,6 +940,9 @@ const SWAGGER_FILES = [
       <div class="auth-field">
         <label>Environment</label>
         <div id="envBtnGroup" class="env-btn-group"></div>
+        <div id="stageVpnNotice" style="display:none; margin-top:5px; padding:5px 8px; background:#fff8e1; border:1px solid #f59e0b; border-radius:4px; font-size:11px; color:#92400e; line-height:1.4;">
+          ⚠️ Stage 환경은 <strong>사내 VPN 연결 필수</strong>. VPN 미연결 시 토큰 발급·API 실행 불가. CBT·Prod는 VPN 없이 사용 가능합니다.
+        </div>
       </div>
 
       <div class="auth-field">
@@ -3401,6 +3404,15 @@ function updateEnvBtnGroup() {
     </span>`;
   }).join('');
   updateTokenBtnTooltip();
+  updateStageVpnNotice();
+}
+
+function updateStageVpnNotice() {
+  const notice = document.getElementById('stageVpnNotice');
+  if (!notice) return;
+  const isRemote = location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+  const isStage  = activeEnv?.name === 'stage';
+  notice.style.display = (isRemote && isStage) ? 'block' : 'none';
 }
 
 function onEnvChange(idx) {
