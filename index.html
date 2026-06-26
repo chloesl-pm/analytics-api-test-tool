@@ -940,9 +940,6 @@ const SWAGGER_FILES = [
       <div class="auth-field">
         <label>Environment</label>
         <div id="envBtnGroup" class="env-btn-group"></div>
-        <div id="stageVpnNotice" style="display:none; margin-top:5px; padding:5px 8px; background:#fff8e1; border:1px solid #f59e0b; border-radius:4px; font-size:11px; color:#92400e; line-height:1.4;">
-          ⚠️ Stage 환경은 <strong>사내 VPN 연결 필수</strong>. VPN 미연결 시 토큰 발급·API 실행 불가. CBT·Prod는 VPN 없이 사용 가능합니다.
-        </div>
       </div>
 
       <div class="auth-field">
@@ -951,6 +948,11 @@ const SWAGGER_FILES = [
           <input type="text" id="baseUrl" class="wide" placeholder="https://..." autocomplete="off" />
         </div>
       </div>
+    </div>
+
+    <!-- Stage VPN notice (Row 1.5) -->
+    <div id="stageVpnNotice" style="display:none; padding:6px 10px; background:#fff8e1; border:1px solid #f59e0b; border-radius:4px; font-size:11px; color:#92400e; line-height:1.5;">
+      ⚠️ <strong>Stage 환경은 사내 VPN 연결 필수</strong>입니다. VPN 미연결 시 토큰 발급·API 실행이 불가능합니다. VPN 없이 사용하려면 CBT 또는 Prod 환경을 선택하세요.
     </div>
 
     <!-- Row 2: Auth fields + Buttons -->
@@ -3410,9 +3412,7 @@ function updateEnvBtnGroup() {
 function updateStageVpnNotice() {
   const notice = document.getElementById('stageVpnNotice');
   if (!notice) return;
-  const isRemote = location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-  const isStage  = activeEnv?.name === 'stage';
-  notice.style.display = (isRemote && isStage) ? 'block' : 'none';
+  notice.style.display = (activeEnv?.name === 'stage') ? 'block' : 'none';
 }
 
 function onEnvChange(idx) {
@@ -3633,21 +3633,43 @@ async function fetchAuthToken() {
     let token = null;
     const iamUrl = getIamTokenUrl();
 
-    const useProxyForIam = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    if (useProxyForIam) {
-      const r = await fetch('/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: iamUrl, method: 'POST',
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isFileProt  = location.protocol === 'file:';
+
+    if (!isFileProt) {
+      // proxy 시도 (localhost: 30s, 외부: 8s 후 직접 fetch 폴백)
+      const proxyTimeout = isLocalhost ? 30000 : 8000;
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), proxyTimeout);
+      let proxyOk = false;
+      try {
+        const r = await fetch('/proxy', {
+          method: 'POST', signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: iamUrl, method: 'POST',
+            headers: { 'Content-Type': 'application/json' }, body: iamBody })
+        });
+        clearTimeout(tid);
+        const d = await r.json();
+        if (!d.error) {
+          token = d.headers?.['X-Subject-Token'] || d.headers?.['x-subject-token'];
+          if (!token) throw new Error(`HTTP ${d.status} — ${d.body ? d.body.slice(0, 800) : '응답 없음'}`);
+          proxyOk = true;
+        }
+      } catch (e) {
+        clearTimeout(tid);
+        if (isLocalhost) throw e; // localhost proxy 실패는 그대로 에러
+        // 외부(Render): proxy 실패 → 브라우저 직접 fetch 폴백 (VPN 연결 시 동작)
+      }
+      if (!proxyOk && !isLocalhost) {
+        const r = await fetch(iamUrl, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: iamBody
-        })
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error);
-      token = d.headers?.['X-Subject-Token'] || d.headers?.['x-subject-token'];
-      if (!token) throw new Error(`HTTP ${d.status} — ${d.body ? d.body.slice(0, 800) : '응답 없음'}`);
+        });
+        token = r.headers.get('X-Subject-Token');
+        if (!token) throw new Error(`토큰이 응답 헤더에 없습니다 (HTTP ${r.status}). Credential 값을 확인하세요.`);
+      }
     } else {
       const r = await fetch(iamUrl, {
         method: 'POST',
