@@ -2511,7 +2511,7 @@ async function _fetchResourceList(endpoint, mode) {
   if (!domainVal || !projectVal) throw new Error('Domain-ID / Project-ID를 먼저 입력하세요');
 
   const url = `${base}/v1/domains/${encodeURIComponent(domainVal)}/projects/${encodeURIComponent(projectVal)}/${endpoint}`;
-  const useProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const useProxy = location.protocol !== 'file:';
   let data;
   if (useProxy) {
     const r = await fetch('/proxy', {
@@ -3152,8 +3152,7 @@ async function executeApi(fileIdx, ep, globalSubName = null, globalTopicName = n
     } catch { /* body가 JSON이 아닐 경우 무시 */ }
   }
 
-  // localhost 환경이면 /proxy 를 통해 CORS 우회
-  const useProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const useProxy = location.protocol !== 'file:';
   const proxyUrl = `${location.origin}/proxy`;
 
   const start = Date.now();
